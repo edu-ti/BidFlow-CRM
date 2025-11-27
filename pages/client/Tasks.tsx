@@ -1,0 +1,537 @@
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  Calendar,
+  CheckCircle2,
+  Search,
+  Trash2,
+  X,
+  User,
+  Edit2,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
+import { db, auth, appId } from "../../lib/firebase";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy,
+} from "firebase/firestore";
+
+interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate: string;
+  priority: "high" | "medium" | "low";
+  status: "completed" | "pending";
+  assignee: string;
+}
+
+const Tasks = () => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [newTask, setNewTask] = useState<Partial<Task>>({
+    title: "",
+    description: "",
+    dueDate: "",
+    priority: "medium",
+    assignee: "Eu",
+  });
+
+  // Conectar ao Firestore
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const q = query(
+      collection(
+        db,
+        "artifacts",
+        appId,
+        "users",
+        auth.currentUser.uid,
+        "tasks"
+      ),
+      orderBy("createdAt", "desc") // Ordenar por criação (mais recentes primeiro)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetchedTasks = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Task[];
+        setTasks(fetchedTasks);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Erro ao buscar tarefas:", error);
+        setIsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  const toggleTaskStatus = async (task: Task) => {
+    if (!auth.currentUser) return;
+    try {
+      const taskRef = doc(
+        db,
+        "artifacts",
+        appId,
+        "users",
+        auth.currentUser.uid,
+        "tasks",
+        task.id
+      );
+      await updateDoc(taskRef, {
+        status: task.status === "pending" ? "completed" : "pending",
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    if (!auth.currentUser) return;
+    if (confirm("Tem certeza que deseja excluir esta tarefa?")) {
+      try {
+        await deleteDoc(
+          doc(
+            db,
+            "artifacts",
+            appId,
+            "users",
+            auth.currentUser.uid,
+            "tasks",
+            id
+          )
+        );
+      } catch (error) {
+        console.error("Erro ao deletar tarefa:", error);
+      }
+    }
+  };
+
+  const openEditModal = (task: Task) => {
+    setNewTask({
+      title: task.title,
+      description: task.description,
+      dueDate: task.dueDate,
+      priority: task.priority,
+      assignee: task.assignee,
+    });
+    setEditingId(task.id);
+    setIsModalOpen(true);
+  };
+
+  const openNewTaskModal = () => {
+    setNewTask({
+      title: "",
+      description: "",
+      dueDate: "",
+      priority: "medium",
+      assignee: "Eu",
+    });
+    setEditingId(null);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveTask = async () => {
+    if (!newTask.title || !auth.currentUser) return;
+
+    try {
+      const tasksRef = collection(
+        db,
+        "artifacts",
+        appId,
+        "users",
+        auth.currentUser.uid,
+        "tasks"
+      );
+
+      if (editingId) {
+        // Editar
+        await updateDoc(doc(tasksRef, editingId), {
+          title: newTask.title,
+          description: newTask.description || "",
+          dueDate: newTask.dueDate || "Sem prazo",
+          priority: newTask.priority || "medium",
+          assignee: newTask.assignee || "Eu",
+        });
+      } else {
+        // Criar
+        await addDoc(tasksRef, {
+          title: newTask.title,
+          description: newTask.description || "",
+          dueDate: newTask.dueDate || "Sem prazo",
+          priority: newTask.priority || "medium",
+          assignee: newTask.assignee || "Eu",
+          status: "pending",
+          createdAt: new Date().toISOString(), // Importante para ordenação
+        });
+      }
+
+      setIsModalOpen(false);
+      setNewTask({
+        title: "",
+        description: "",
+        dueDate: "",
+        priority: "medium",
+        assignee: "Eu",
+      });
+      setEditingId(null);
+    } catch (error) {
+      console.error("Erro ao salvar tarefa:", error);
+      alert("Não foi possível salvar a tarefa.");
+    }
+  };
+
+  const getPriorityColor = (p: string) => {
+    switch (p) {
+      case "high":
+        return "bg-red-100 text-red-700";
+      case "medium":
+        return "bg-yellow-100 text-yellow-700";
+      case "low":
+        return "bg-blue-100 text-blue-700";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
+
+  const filteredTasks = tasks.filter((t) => {
+    const matchesFilter = filter === "all" ? true : t.status === filter;
+    const matchesSearch =
+      t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.description || "").toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Tarefas</h1>
+          <p className="text-gray-500">Organize seu dia e não perca prazos.</p>
+        </div>
+        <button
+          onClick={openNewTaskModal}
+          className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 font-medium transition shadow-sm"
+        >
+          <Plus size={18} /> Nova Tarefa
+        </button>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Toolbar */}
+        <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gray-50">
+          <div className="flex gap-2 p-1 bg-gray-200 rounded-lg">
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+                filter === "all"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Todas
+            </button>
+            <button
+              onClick={() => setFilter("pending")}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+                filter === "pending"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Pendentes
+            </button>
+            <button
+              onClick={() => setFilter("completed")}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+                filter === "completed"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Concluídas
+            </button>
+          </div>
+
+          <div className="relative w-full sm:w-64">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              size={16}
+            />
+            <input
+              type="text"
+              placeholder="Buscar tarefas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white text-gray-900"
+            />
+          </div>
+        </div>
+
+        {/* Task List */}
+        <div className="divide-y divide-gray-100 min-h-[300px]">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-full py-20">
+              <Loader2 className="animate-spin text-indigo-600" size={32} />
+            </div>
+          ) : filteredTasks.length > 0 ? (
+            filteredTasks.map((task) => (
+              <div
+                key={task.id}
+                className={`p-4 hover:bg-gray-50 transition flex items-start gap-4 group ${
+                  task.status === "completed" ? "opacity-60 bg-gray-50" : ""
+                }`}
+              >
+                <button
+                  onClick={() => toggleTaskStatus(task)}
+                  className={`mt-1 flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition ${
+                    task.status === "completed"
+                      ? "bg-green-500 border-green-500 text-white"
+                      : "border-gray-400 text-transparent hover:border-indigo-500"
+                  }`}
+                >
+                  <CheckCircle2
+                    size={14}
+                    fill="currentColor"
+                    className={
+                      task.status === "completed" ? "opacity-100" : "opacity-0"
+                    }
+                  />
+                </button>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
+                    <h3
+                      className={`font-semibold text-gray-900 ${
+                        task.status === "completed"
+                          ? "line-through text-gray-500"
+                          : ""
+                      }`}
+                    >
+                      {task.title}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${getPriorityColor(
+                          task.priority
+                        )}`}
+                      >
+                        {task.priority === "high"
+                          ? "Alta"
+                          : task.priority === "medium"
+                          ? "Média"
+                          : "Baixa"}
+                      </span>
+                      {task.status === "completed" && (
+                        <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                          <CheckCircle2 size={12} /> Feito
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {task.description && (
+                    <p className="text-sm text-gray-500 mb-2">
+                      {task.description}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <div
+                      className={`flex items-center gap-1 ${
+                        task.dueDate.includes("Hoje")
+                          ? "text-red-500 font-medium"
+                          : ""
+                      }`}
+                    >
+                      <Calendar size={14} />
+                      {task.dueDate}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <User size={14} />
+                      {task.assignee}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => openEditModal(task)}
+                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                    title="Editar Tarefa"
+                  >
+                    <Edit2 size={18} />
+                  </button>
+                  <button
+                    onClick={() => deleteTask(task.id)}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                    title="Excluir Tarefa"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-10 text-center text-gray-500 flex flex-col items-center">
+              <AlertCircle size={48} className="text-gray-300 mb-4" />
+              <p>Nenhuma tarefa encontrada.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* New/Edit Task Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-gray-800">
+                {editingId ? "Editar Tarefa" : "Nova Tarefa"}
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Título
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 bg-white"
+                  placeholder="Ex: Ligar para cliente..."
+                  value={newTask.title}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, title: e.target.value })
+                  }
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Descrição
+                </label>
+                <textarea
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none text-gray-900 bg-white"
+                  placeholder="Detalhes da tarefa..."
+                  rows={3}
+                  value={newTask.description}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, description: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prazo
+                  </label>
+                  <div className="relative">
+                    <Calendar
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      size={16}
+                    />
+                    <input
+                      type="text"
+                      className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 bg-white"
+                      placeholder="Hoje, 14:00"
+                      value={newTask.dueDate}
+                      onChange={(e) =>
+                        setNewTask({ ...newTask, dueDate: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prioridade
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 bg-white"
+                    value={newTask.priority}
+                    onChange={(e) =>
+                      setNewTask({
+                        ...newTask,
+                        priority: e.target.value as any,
+                      })
+                    }
+                  >
+                    <option value="low">Baixa</option>
+                    <option value="medium">Média</option>
+                    <option value="high">Alta</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Responsável
+                </label>
+                <div className="relative">
+                  <User
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    size={16}
+                  />
+                  <input
+                    type="text"
+                    className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 bg-white"
+                    placeholder="Nome do responsável"
+                    value={newTask.assignee}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, assignee: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveTask}
+                disabled={!newTask.title}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editingId ? "Salvar Alterações" : "Criar Tarefa"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Tasks;
