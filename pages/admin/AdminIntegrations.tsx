@@ -28,6 +28,7 @@ import {
   limit,
   addDoc,
 } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 interface ApiConfig {
   whatsappStatus: "operational" | "degraded" | "down";
@@ -60,6 +61,57 @@ const AdminIntegrations = () => {
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [webhookLogs, setWebhookLogs] = useState<WebhookLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+
+  // Confirm Modal State
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm?: () => void;
+    confirmText?: string;
+    showCancel?: boolean;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showConfirm = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    type: ConfirmModalType = "warning"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: true,
+      confirmText: "Regenerar",
+      onConfirm: () => {
+        onConfirm();
+        setIsConfirmOpen(false);
+      },
+    });
+    setIsConfirmOpen(true);
+  };
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: ConfirmModalType = "info"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: false,
+      confirmText: "OK",
+      onConfirm: () => setIsConfirmOpen(false),
+    });
+    setIsConfirmOpen(true);
+  };
 
   // 1. Carregar Configurações do Firestore
   useEffect(() => {
@@ -115,21 +167,30 @@ const AdminIntegrations = () => {
   }, [isLogModalOpen]);
 
   const handleRegenerateKey = async (type: "admin" | "public") => {
-    if (!confirm(`Regenerar chave ${type === "admin" ? "Mestra" : "Pública"}?`))
-      return;
-    setIsRegenerating(type);
-    try {
-      const newKey = `${type === "admin" ? "sk" : "pk"}_live_${Math.random()
-        .toString(36)
-        .substring(2, 15)}`;
-      await updateDoc(doc(db, "artifacts", appId, "settings", "api_config"), {
-        [type === "admin" ? "adminKey" : "publicKey"]: newKey,
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsRegenerating(null);
-    }
+    showConfirm(
+      `Regenerar Chave ${type === "admin" ? "Mestra" : "Pública"}`,
+      "Isso invalidará a chave atual e pode quebrar integrações existentes. Deseja continuar?",
+      async () => {
+        setIsRegenerating(type);
+        try {
+          const newKey = `${type === "admin" ? "sk" : "pk"}_live_${Math.random()
+            .toString(36)
+            .substring(2, 15)}`;
+          await updateDoc(
+            doc(db, "artifacts", appId, "settings", "api_config"),
+            {
+              [type === "admin" ? "adminKey" : "publicKey"]: newKey,
+            }
+          );
+          showAlert("Sucesso", "Chave regenerada com sucesso.", "success");
+        } catch (error) {
+          console.error(error);
+          showAlert("Erro", "Falha ao regenerar chave.", "error");
+        } finally {
+          setIsRegenerating(null);
+        }
+      }
+    );
   };
 
   const handleCopy = (key: string, type: "admin" | "public") => {
@@ -158,7 +219,11 @@ const AdminIntegrations = () => {
       });
     } catch (e) {
       console.error("Erro ao criar log:", e);
-      alert("Erro ao criar log. Verifique as regras do Firebase.");
+      showAlert(
+        "Erro",
+        "Erro ao criar log. Verifique as regras do Firebase.",
+        "error"
+      );
     }
   };
 
@@ -420,6 +485,18 @@ const AdminIntegrations = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
+      />
     </div>
   );
 };

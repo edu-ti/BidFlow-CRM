@@ -26,6 +26,7 @@ import {
   orderBy,
   updateDoc,
 } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal"; // Importe o Modal
 
 interface TeamMember {
   id: string;
@@ -54,6 +55,22 @@ const AdminTeam = () => {
   // Estado para o Link de Convite
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+
+  // Estado para o Modal de Confirmação
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm: () => void;
+    confirmText: string;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+    onConfirm: () => {},
+    confirmText: "Confirmar",
+  });
 
   const [newMember, setNewMember] = useState({
     name: "",
@@ -161,31 +178,45 @@ const AdminTeam = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Tem certeza que deseja remover este membro da equipe?")) {
-      try {
-        await deleteDoc(doc(db, "artifacts", appId, "team", id));
-      } catch (error) {
-        console.error("Erro ao excluir:", error);
-      }
-    }
+  const handleDelete = (id: string, name: string) => {
+    setConfirmConfig({
+      title: "Remover Membro",
+      message: `Tem certeza que deseja remover ${name} da equipe?`,
+      type: "error",
+      confirmText: "Remover",
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "artifacts", appId, "team", id));
+        } catch (error) {
+          console.error("Erro ao excluir:", error);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
-  const handleToggleStatus = async (member: TeamMember) => {
+  const handleToggleStatus = (member: TeamMember) => {
     const newStatus = member.status === "active" ? "inactive" : "active";
     const actionText =
       member.status === "active" ? "desativar (bloquear)" : "ativar";
 
-    if (confirm(`Deseja realmente ${actionText} o acesso de ${member.name}?`)) {
-      try {
-        await updateDoc(doc(db, "artifacts", appId, "team", member.id), {
-          status: newStatus,
-        });
-      } catch (error) {
-        console.error("Erro ao alterar status:", error);
-        alert("Erro ao alterar status.");
-      }
-    }
+    setConfirmConfig({
+      title: `${member.status === "active" ? "Bloquear" : "Ativar"} Membro`,
+      message: `Deseja realmente ${actionText} o acesso de ${member.name}?`,
+      type: "warning",
+      confirmText: member.status === "active" ? "Bloquear" : "Ativar",
+      onConfirm: async () => {
+        try {
+          await updateDoc(doc(db, "artifacts", appId, "team", member.id), {
+            status: newStatus,
+          });
+        } catch (error) {
+          console.error("Erro ao alterar status:", error);
+          alert("Erro ao alterar status.");
+        }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
   const togglePermission = (key: keyof typeof newMember.permissions) => {
@@ -356,7 +387,7 @@ const AdminTeam = () => {
                       <Edit2 size={18} />
                     </button>
                     <button
-                      onClick={() => handleDelete(member.id)}
+                      onClick={() => handleDelete(member.id, member.name)}
                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                       title="Remover Membro"
                     >
@@ -586,6 +617,17 @@ const AdminTeam = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+      />
     </div>
   );
 };

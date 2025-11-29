@@ -31,6 +31,7 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal"; // Import do Modal
 
 // Definição estrita dos tipos permitidos
 type TemplateType =
@@ -69,6 +70,22 @@ const AdminTemplates = () => {
     description: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Estado para o Modal de Confirmação
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm: () => void;
+    confirmText: string;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+    onConfirm: () => {},
+    confirmText: "Confirmar",
+  });
 
   // 1. Carregar Templates do Firestore
   useEffect(() => {
@@ -141,14 +158,21 @@ const AdminTemplates = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este template?")) {
-      try {
-        await deleteDoc(doc(db, "artifacts", appId, "templates", id));
-      } catch (error) {
-        console.error("Erro ao excluir:", error);
-      }
-    }
+  const handleDelete = (id: string, templateName: string) => {
+    setConfirmConfig({
+      title: "Excluir Template",
+      message: `Tem certeza que deseja excluir o template "${templateName}"? Esta ação não pode ser desfeita.`,
+      type: "error",
+      confirmText: "Excluir",
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "artifacts", appId, "templates", id));
+        } catch (error) {
+          console.error("Erro ao excluir:", error);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
   // 3. Helpers Visuais - Ícones e Cores para cada tipo
@@ -299,7 +323,7 @@ const AdminTemplates = () => {
                 </h3>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-3 right-3 bg-white shadow-sm rounded-lg border border-gray-100">
                   <button
-                    onClick={() => handleDelete(tpl.id)}
+                    onClick={() => handleDelete(tpl.id, tpl.name)}
                     className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
                   >
                     <Trash2 size={14} />
@@ -461,6 +485,17 @@ const AdminTemplates = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+      />
     </div>
   );
 };

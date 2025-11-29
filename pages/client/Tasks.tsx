@@ -22,6 +22,7 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 interface Task {
   id: string;
@@ -50,6 +51,37 @@ const Tasks = () => {
     assignee: "Eu",
   });
 
+  // Confirm Modal State
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm?: () => void;
+    confirmText?: string;
+    showCancel?: boolean;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: ConfirmModalType = "info"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: false,
+      confirmText: "OK",
+      onConfirm: () => setIsConfirmOpen(false),
+    });
+    setIsConfirmOpen(true);
+  };
+
   // Conectar ao Firestore
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -63,7 +95,7 @@ const Tasks = () => {
         auth.currentUser.uid,
         "tasks"
       ),
-      orderBy("createdAt", "desc") // Ordenar por criação (mais recentes primeiro)
+      orderBy("createdAt", "desc")
     );
 
     const unsubscribe = onSnapshot(
@@ -105,25 +137,35 @@ const Tasks = () => {
     }
   };
 
-  const deleteTask = async (id: string) => {
+  const deleteTask = (id: string) => {
     if (!auth.currentUser) return;
-    if (confirm("Tem certeza que deseja excluir esta tarefa?")) {
-      try {
-        await deleteDoc(
-          doc(
-            db,
-            "artifacts",
-            appId,
-            "users",
-            auth.currentUser.uid,
-            "tasks",
-            id
-          )
-        );
-      } catch (error) {
-        console.error("Erro ao deletar tarefa:", error);
-      }
-    }
+
+    setConfirmConfig({
+      title: "Excluir Tarefa",
+      message: "Tem certeza que deseja excluir esta tarefa?",
+      type: "error",
+      confirmText: "Excluir",
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          await deleteDoc(
+            doc(
+              db,
+              "artifacts",
+              appId,
+              "users",
+              auth.currentUser!.uid,
+              "tasks",
+              id
+            )
+          );
+        } catch (error) {
+          console.error("Erro ao deletar tarefa:", error);
+          showAlert("Erro", "Erro ao excluir tarefa.", "error");
+        }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
   const openEditModal = (task: Task) => {
@@ -181,7 +223,7 @@ const Tasks = () => {
           priority: newTask.priority || "medium",
           assignee: newTask.assignee || "Eu",
           status: "pending",
-          createdAt: new Date().toISOString(), // Importante para ordenação
+          createdAt: new Date().toISOString(),
         });
       }
 
@@ -196,7 +238,7 @@ const Tasks = () => {
       setEditingId(null);
     } catch (error) {
       console.error("Erro ao salvar tarefa:", error);
-      alert("Não foi possível salvar a tarefa.");
+      showAlert("Erro", "Não foi possível salvar a tarefa.", "error");
     }
   };
 
@@ -530,6 +572,18 @@ const Tasks = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
+      />
     </div>
   );
 };

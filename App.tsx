@@ -113,13 +113,19 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 }) => (
   <Link
     to={to}
-    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
       active
-        ? "bg-indigo-50 text-indigo-600"
+        ? "bg-indigo-50 text-[#6C63FF]"
         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
     }`}
   >
-    <Icon size={20} />
+    {/* Ícone com cor da marca se ativo ou se estiver em hover (efeito visual melhorado) */}
+    <Icon
+      size={20}
+      className={`transition-colors ${
+        active ? "text-[#6C63FF]" : "text-gray-500 group-hover:text-[#6C63FF]"
+      }`}
+    />
     <span>{label}</span>
   </Link>
 );
@@ -292,14 +298,22 @@ const Layout: React.FC<LayoutProps> = ({
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-full hidden md:flex z-20 transition-all duration-300">
         <div className="p-6 flex items-center gap-2 border-b border-gray-100">
           <div
-            className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold ${
-              type === "admin" ? "bg-[#6C63FF]" : "bg-indigo-600"
+             className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold ${
+              type === "admin" ? "bg-[#ffffff]" : "bg-indigo-600"
             }`}
           >
-            {type === "admin" ? "M" : "B"}
+             {type === "admin" ? "M" : "B" } 
           </div>
           <span className="text-xl font-bold text-gray-800">
-            {type === "admin" ? "BidFlow Master" : "BidFlow"}
+            {type === "admin" ? (
+              <img
+                src="/assets/logo-1200.png"
+                alt="BidFlow Master"
+                className="h-8 object-contain"
+              />
+            ) : (
+              "BidFlow"
+            )}
           </span>
         </div>
 

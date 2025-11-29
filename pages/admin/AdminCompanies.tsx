@@ -32,6 +32,7 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 interface Company {
   id: string;
@@ -53,7 +54,7 @@ const AdminCompanies = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
-  // Modal State
+  // Modal de Edição
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Company>>({
@@ -65,6 +66,22 @@ const AdminCompanies = () => {
     plan: "Starter",
     status: "active",
     limits: { users: 1, msgs: 1000 },
+  });
+
+  // Estado do Modal de Confirmação
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm: () => void;
+    confirmText: string;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+    onConfirm: () => {},
+    confirmText: "Confirmar",
   });
 
   // Firestore Sync
@@ -164,7 +181,6 @@ const AdminCompanies = () => {
       setIsModalOpen(false);
     } catch (error: any) {
       console.error("Erro ao salvar empresa:", error);
-      // Mostra a mensagem real do erro para facilitar o debug
       alert(
         `Erro ao salvar: ${
           error.message || "Verifique o console (F12) para detalhes"
@@ -173,19 +189,22 @@ const AdminCompanies = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (
-      confirm(
-        "Tem certeza que deseja excluir esta empresa? Esta ação não pode ser desfeita."
-      )
-    ) {
-      try {
-        await deleteDoc(doc(db, "artifacts", appId, "companies", id));
-      } catch (error: any) {
-        console.error("Erro ao excluir:", error);
-        alert(`Erro ao excluir: ${error.message}`);
-      }
-    }
+  const handleDelete = (id: string, name: string) => {
+    setConfirmConfig({
+      title: "Excluir Empresa",
+      message: `Tem certeza que deseja excluir a empresa "${name}"? Todos os dados (usuários, conversas, configurações) serão perdidos permanentemente.`,
+      type: "error",
+      confirmText: "Excluir Definitivamente",
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "artifacts", appId, "companies", id));
+        } catch (error: any) {
+          console.error("Erro ao excluir:", error);
+          alert(`Erro ao excluir: ${error.message}`);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
     setActiveMenu(null);
   };
 
@@ -390,7 +409,7 @@ const AdminCompanies = () => {
                                     : "Ativar Cliente"}
                                 </button>
                                 <button
-                                  onClick={() => handleDelete(c.id)}
+                                  onClick={() => handleDelete(c.id, c.name)}
                                   className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                                 >
                                   <Trash2 size={16} /> Deletar Cliente
@@ -629,6 +648,17 @@ const AdminCompanies = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+      />
     </div>
   );
 };

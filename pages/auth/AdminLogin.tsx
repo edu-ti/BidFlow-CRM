@@ -35,8 +35,13 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         </Link>
 
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-[#6C63FF] rounded-xl flex items-center justify-center text-white font-bold text-xl mx-auto mb-4 shadow-lg shadow-purple-900/20">
-            M
+          {/* NOVA LOGO LOGIN ADMIN - Versão clara/branca se necessário, ou original */}
+          <div className="bg-white/10 p-4 rounded-xl mb-4 inline-block">
+            <img
+              src="/assets/logo-1200.png"
+              alt="BidFlow Master"
+              className="h-12 object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-white">Acesso Master</h1>
           <p className="text-gray-400 mt-1">

@@ -29,6 +29,7 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 interface Invoice {
   id: string;
@@ -66,6 +67,37 @@ const AdminFinance = () => {
     companyName: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Confirm Modal State
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm?: () => void;
+    confirmText?: string;
+    showCancel?: boolean;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: ConfirmModalType = "info"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: false,
+      confirmText: "OK",
+      onConfirm: () => setIsConfirmOpen(false),
+    });
+    setIsConfirmOpen(true);
+  };
 
   // 1. Carregar Faturas e Empresas
   useEffect(() => {
@@ -127,7 +159,11 @@ const AdminFinance = () => {
 
   const handleSave = async () => {
     if (!invoiceForm.companyName || !invoiceForm.amount) {
-      alert("Preencha a empresa e o valor.");
+      showAlert(
+        "Campos Obrigatórios",
+        "Preencha a empresa e o valor.",
+        "warning"
+      );
       return;
     }
     setIsSaving(true);
@@ -142,9 +178,10 @@ const AdminFinance = () => {
         });
       }
       setIsModalOpen(false);
+      showAlert("Sucesso", "Fatura salva com sucesso.", "success");
     } catch (error: any) {
       console.error("Erro ao salvar:", error);
-      alert(`Erro ao salvar: ${error.message}`);
+      showAlert("Erro", `Erro ao salvar: ${error.message}`, "error");
     } finally {
       setIsSaving(false);
     }
@@ -601,6 +638,18 @@ const AdminFinance = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
+      />
     </div>
   );
 };

@@ -9,6 +9,7 @@ import {
   updateDoc,
   getDocs,
 } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 interface WhatsAppInstance {
   id: string;
@@ -26,6 +27,43 @@ const AdminInstances = () => {
   const [instances, setInstances] = useState<WhatsAppInstance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [companiesMap, setCompaniesMap] = useState<Record<string, string>>({});
+
+  // Estado para o Modal de Confirmação
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm: () => void;
+    confirmText: string;
+    showCancel?: boolean;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+    onConfirm: () => {},
+    confirmText: "Confirmar",
+  });
+
+  const showConfirm = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    type: ConfirmModalType = "warning"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: true,
+      confirmText: "Confirmar",
+      onConfirm: () => {
+        onConfirm();
+        setIsConfirmOpen(false);
+      },
+    });
+    setIsConfirmOpen(true);
+  };
 
   // 1. Carregar nomes das empresas para exibir nos cards (Mapeamento ID -> Nome)
   useEffect(() => {
@@ -81,35 +119,44 @@ const AdminInstances = () => {
 
   // 3. Ações
   const handleRestart = async (inst: WhatsAppInstance) => {
-    if (!confirm(`Reiniciar conexão de ${inst.name}?`)) return;
-    try {
-      // Simula reinício: Pairing -> Connected
-      await updateDoc(inst.ref, { status: "PAIRING" });
-      setTimeout(async () => {
-        await updateDoc(inst.ref, {
-          status: "CONNECTED",
-          lastSync: new Date().toISOString(),
-        });
-      }, 2000);
-    } catch (e) {
-      console.error(e);
-    }
+    showConfirm(
+      "Reiniciar Instância",
+      `Deseja reiniciar a conexão de ${inst.name}? Isso pode causar uma breve interrupção.`,
+      async () => {
+        try {
+          // Simula reinício: Pairing -> Connected
+          await updateDoc(inst.ref, { status: "PAIRING" });
+          setTimeout(async () => {
+            await updateDoc(inst.ref, {
+              status: "CONNECTED",
+              lastSync: new Date().toISOString(),
+            });
+          }, 2000);
+        } catch (e) {
+          console.error(e);
+        }
+      },
+      "info"
+    );
   };
 
   const handleDisconnect = async (inst: WhatsAppInstance) => {
-    if (
-      !confirm(`Desconectar ${inst.name}? Isso irá parar o envio de mensagens.`)
-    )
-      return;
-    try {
-      await updateDoc(inst.ref, {
-        status: "DISCONNECTED",
-        phoneNumber: "",
-        batteryLevel: 0,
-      });
-    } catch (e) {
-      console.error(e);
-    }
+    showConfirm(
+      "Desconectar Instância",
+      `Deseja realmente desconectar ${inst.name}? Isso irá parar o envio de mensagens imediatamente.`,
+      async () => {
+        try {
+          await updateDoc(inst.ref, {
+            status: "DISCONNECTED",
+            phoneNumber: "",
+            batteryLevel: 0,
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      },
+      "error"
+    );
   };
 
   const formatTimeAgo = (dateString?: string) => {
@@ -239,6 +286,18 @@ const AdminInstances = () => {
           })}
         </div>
       )}
+
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
+      />
     </div>
   );
 };

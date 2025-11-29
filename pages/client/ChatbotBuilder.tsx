@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { db, auth, appId } from "../../lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 interface Node {
   id: string;
@@ -247,6 +248,37 @@ const ChatbotBuilder = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
+  // Confirm Modal State
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm?: () => void;
+    confirmText?: string;
+    showCancel?: boolean;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: ConfirmModalType = "info"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: false,
+      confirmText: "OK",
+      onConfirm: () => setIsConfirmOpen(false),
+    });
+    setIsConfirmOpen(true);
+  };
+
   // Load state from Firestore
   useEffect(() => {
     const loadFlow = async () => {
@@ -310,7 +342,7 @@ const ChatbotBuilder = () => {
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error("Erro ao salvar fluxo:", error);
-      alert("Erro ao salvar.");
+      showAlert("Erro", "Não foi possível salvar o fluxo.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -563,6 +595,18 @@ const ChatbotBuilder = () => {
           </div>
         ))}
       </div>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
+      />
     </div>
   );
 };

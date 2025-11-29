@@ -23,9 +23,10 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 interface ContactData {
-  id: string; // ID agora é string (do Firestore)
+  id: string;
   name: string;
   phone: string;
   email: string;
@@ -50,6 +51,37 @@ const Contacts = () => {
 
   // Actions Menu State
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Modal de Confirmação
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm?: () => void;
+    confirmText?: string;
+    showCancel?: boolean;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: ConfirmModalType = "info"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: false,
+      confirmText: "OK",
+      onConfirm: () => setIsConfirmOpen(false),
+    });
+    setIsConfirmOpen(true);
+  };
 
   // Firestore Subscription
   useEffect(() => {
@@ -132,30 +164,40 @@ const Contacts = () => {
       setEditingId(null);
     } catch (error) {
       console.error("Error saving contact:", error);
-      alert("Erro ao salvar contato. Tente novamente.");
+      showAlert("Erro", "Erro ao salvar contato. Tente novamente.", "error");
     }
   };
 
-  const handleDeleteContact = async (id: string) => {
+  const handleDeleteContact = (id: string) => {
     if (!auth.currentUser) return;
-    if (confirm("Tem certeza que deseja excluir este contato?")) {
-      try {
-        await deleteDoc(
-          doc(
-            db,
-            "artifacts",
-            appId,
-            "users",
-            auth.currentUser.uid,
-            "contacts",
-            id
-          )
-        );
-        setOpenMenuId(null);
-      } catch (error) {
-        console.error("Error deleting contact:", error);
-      }
-    }
+
+    setConfirmConfig({
+      title: "Excluir Contato",
+      message: "Tem certeza que deseja excluir este contato?",
+      type: "error",
+      confirmText: "Excluir",
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          await deleteDoc(
+            doc(
+              db,
+              "artifacts",
+              appId,
+              "users",
+              auth.currentUser!.uid,
+              "contacts",
+              id
+            )
+          );
+          setOpenMenuId(null);
+        } catch (error) {
+          console.error("Error deleting contact:", error);
+          showAlert("Erro", "Não foi possível excluir o contato.", "error");
+        }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
   const handleEditContact = (contact: ContactData) => {
@@ -436,6 +478,18 @@ const Contacts = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação Global */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
+      />
     </div>
   );
 };

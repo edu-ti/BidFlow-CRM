@@ -19,6 +19,7 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 // Stages can also be dynamic, but let's keep them static for now
 const initialStages: FunnelStage[] = [
@@ -36,6 +37,21 @@ const Funnel = () => {
     title: "",
     value: "",
     contactName: "",
+  });
+
+  // Confirm Modal State
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm?: () => void;
+    confirmText?: string;
+    showCancel?: boolean;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
   });
 
   // Firestore Subscription
@@ -122,13 +138,34 @@ const Funnel = () => {
     }
   };
 
-  const handleDeleteDeal = async (id: string) => {
+  const handleDeleteDeal = (id: string) => {
     if (!auth.currentUser) return;
-    if (confirm("Deletar este negócio?")) {
-      await deleteDoc(
-        doc(db, "artifacts", appId, "users", auth.currentUser.uid, "deals", id)
-      );
-    }
+
+    setConfirmConfig({
+      title: "Excluir Negócio",
+      message: "Tem certeza que deseja excluir este negócio?",
+      type: "error",
+      confirmText: "Excluir",
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          await deleteDoc(
+            doc(
+              db,
+              "artifacts",
+              appId,
+              "users",
+              auth.currentUser!.uid,
+              "deals",
+              id
+            )
+          );
+        } catch (e) {
+          console.error("Error deleting deal:", e);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
   return (
@@ -278,6 +315,18 @@ const Funnel = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
+      />
     </div>
   );
 };

@@ -58,6 +58,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 // --- Interfaces ---
 
@@ -172,12 +173,6 @@ const availableModules = [
   },
 ];
 
-//const availablePlans = [
-//  { name: "Starter", users: 1, msgs: 1000, price: 199 },
-//  { name: "Pro", users: 5, msgs: 10000, price: 499 },
-//  { name: "Enterprise", users: 15, msgs: 100000, price: 999 },
-//];
-
 const AdminCompanyDetail = () => {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState("overview");
@@ -198,7 +193,7 @@ const AdminCompanyDetail = () => {
   const [contracts, setContracts] = useState<Contract[]>([]);
 
   // NOVO: Estado para armazenar os planos vindos do banco
-  const [availablePlans, setAvailablePlans] = useState<Plan[]>([]);
+  const [availablePlans, setAvailablePlans] = useState<any[]>([]);
 
   // Modais
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
@@ -226,6 +221,22 @@ const AdminCompanyDetail = () => {
   const [newContractTitle, setNewContractTitle] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Estado do Modal de Confirmação
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm: () => void;
+    confirmText: string;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+    onConfirm: () => {},
+    confirmText: "Confirmar",
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -315,7 +326,7 @@ const AdminCompanyDetail = () => {
       query(plansRef, orderBy("priceMonthly")),
       (snap) => {
         const fetchedPlans = snap.docs.map(
-          (d) => ({ id: d.id, ...d.data() } as Plan)
+          (d) => ({ id: d.id, ...d.data() } as any)
         );
         setAvailablePlans(fetchedPlans);
       }
@@ -475,15 +486,24 @@ const AdminCompanyDetail = () => {
       console.error(e);
     }
   };
-  const handleDeleteUser = async (uid: string) => {
-    if (id && confirm("Excluir usuário?"))
-      try {
-        await deleteDoc(
-          doc(db, "artifacts", appId, "companies", id, "users", uid)
-        );
-      } catch (e) {
-        console.error(e);
-      }
+  const handleDeleteUser = (uid: string, userName: string) => {
+    setConfirmConfig({
+      title: "Excluir Usuário",
+      message: `Tem certeza que deseja remover o usuário ${userName}? Esta ação não pode ser desfeita.`,
+      type: "error",
+      confirmText: "Excluir",
+      onConfirm: async () => {
+        if (!id) return;
+        try {
+          await deleteDoc(
+            doc(db, "artifacts", appId, "companies", id, "users", uid)
+          );
+        } catch (e) {
+          console.error(e);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
   // --- Handlers Instances ---
@@ -506,50 +526,85 @@ const AdminCompanyDetail = () => {
       console.error(e);
     }
   };
-  const handleManageInstance = async (inst: WhatsAppInstance) => {
+  const handleManageInstance = (inst: WhatsAppInstance) => {
     if (!id) return;
-    try {
-      const ref = doc(
-        db,
-        "artifacts",
-        appId,
-        "companies",
-        id,
-        "instances",
-        inst.id
-      );
-      if (inst.status === "CONNECTED") {
-        if (confirm(`Desconectar ${inst.name}?`))
-          await updateDoc(ref, {
-            status: "DISCONNECTED",
-            phoneNumber: "",
-            batteryLevel: 0,
-          });
-      } else {
-        await updateDoc(ref, { status: "QRCODE" });
-        setTimeout(
-          async () =>
+
+    if (inst.status === "CONNECTED") {
+      setConfirmConfig({
+        title: "Desconectar Instância",
+        message: `Deseja realmente desconectar a instância ${inst.name}? O envio e recebimento de mensagens será interrompido.`,
+        type: "warning",
+        confirmText: "Desconectar",
+        onConfirm: async () => {
+          try {
+            const ref = doc(
+              db,
+              "artifacts",
+              appId,
+              "companies",
+              id,
+              "instances",
+              inst.id
+            );
             await updateDoc(ref, {
-              status: "CONNECTED",
-              phoneNumber: "5511999998888",
-              batteryLevel: 100,
-            }),
-          3000
-        );
-      }
-    } catch (e) {
-      console.error(e);
+              status: "DISCONNECTED",
+              phoneNumber: "",
+              batteryLevel: 0,
+            });
+          } catch (e) {
+            console.error(e);
+          }
+        },
+      });
+      setIsConfirmOpen(true);
+    } else {
+      // Conectar não precisa de confirmação
+      const connect = async () => {
+        try {
+          const ref = doc(
+            db,
+            "artifacts",
+            appId,
+            "companies",
+            id,
+            "instances",
+            inst.id
+          );
+          await updateDoc(ref, { status: "QRCODE" });
+          setTimeout(
+            async () =>
+              await updateDoc(ref, {
+                status: "CONNECTED",
+                phoneNumber: "5511999998888",
+                batteryLevel: 100,
+              }),
+            3000
+          );
+        } catch (e) {
+          console.error(e);
+        }
+      };
+      connect();
     }
   };
-  const handleDeleteInstance = async (iid: string) => {
-    if (id && confirm("Excluir instância?"))
-      try {
-        await deleteDoc(
-          doc(db, "artifacts", appId, "companies", id, "instances", iid)
-        );
-      } catch (e) {
-        console.error(e);
-      }
+  const handleDeleteInstance = (iid: string, instName: string) => {
+    setConfirmConfig({
+      title: "Excluir Instância",
+      message: `Tem certeza que deseja excluir a instância ${instName}? O histórico vinculado pode ser perdido.`,
+      type: "error",
+      confirmText: "Excluir",
+      onConfirm: async () => {
+        if (!id) return;
+        try {
+          await deleteDoc(
+            doc(db, "artifacts", appId, "companies", id, "instances", iid)
+          );
+        } catch (e) {
+          console.error(e);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
   // --- Handlers Invoices ---
@@ -653,15 +708,32 @@ const AdminCompanyDetail = () => {
     }
   };
 
-  const handleDeleteContract = async (contractId: string) => {
-    if (!id || !confirm("Excluir este contrato?")) return;
-    try {
-      await deleteDoc(
-        doc(db, "artifacts", appId, "companies", id, "contracts", contractId)
-      );
-    } catch (error) {
-      console.error(error);
-    }
+  const handleDeleteContract = (contractId: string, title: string) => {
+    setConfirmConfig({
+      title: "Excluir Contrato",
+      message: `Deseja realmente excluir o contrato "${title}"?`,
+      type: "error",
+      confirmText: "Excluir",
+      onConfirm: async () => {
+        if (!id) return;
+        try {
+          await deleteDoc(
+            doc(
+              db,
+              "artifacts",
+              appId,
+              "companies",
+              id,
+              "contracts",
+              contractId
+            )
+          );
+        } catch (error) {
+          console.error(error);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
   const handleAddLog = async (action: string, details: string) => {
@@ -1174,7 +1246,7 @@ const AdminCompanyDetail = () => {
                     <Edit2 size={16} />
                   </button>
                   <button
-                    onClick={() => handleDeleteUser(u.id)}
+                    onClick={() => handleDeleteUser(u.id, u.name)}
                     className="text-gray-400 hover:text-red-600 transition"
                   >
                     <Trash2 size={16} />
@@ -1368,7 +1440,9 @@ const AdminCompanyDetail = () => {
                     <Download size={18} />
                   </button>
                   <button
-                    onClick={() => handleDeleteContract(contract.id)}
+                    onClick={() =>
+                      handleDeleteContract(contract.id, contract.title)
+                    }
                     className="text-gray-400 hover:text-red-600 transition p-1.5 hover:bg-red-50 rounded"
                     title="Excluir"
                   >
@@ -1534,7 +1608,7 @@ const AdminCompanyDetail = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleDeleteInstance(inst.id)}
+                  onClick={() => handleDeleteInstance(inst.id, inst.name)}
                   className="text-gray-300 hover:text-red-500 transition"
                 >
                   <Trash2 size={18} />
@@ -2071,6 +2145,17 @@ const AdminCompanyDetail = () => {
       </div>
 
       <div className="min-h-[400px]">{renderTabContent()}</div>
+
+      {/* Modal de Confirmação - Global para todas as tabs */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+      />
     </div>
   );
 };

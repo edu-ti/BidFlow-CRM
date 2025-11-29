@@ -19,6 +19,7 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 interface Plan {
   id: string;
@@ -55,6 +56,37 @@ const AdminPlans = () => {
     features: [],
     recommended: false,
   });
+
+  // Confirm Modal State
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm?: () => void;
+    confirmText?: string;
+    showCancel?: boolean;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: ConfirmModalType = "info"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: false,
+      confirmText: "OK",
+      onConfirm: () => setIsConfirmOpen(false),
+    });
+    setIsConfirmOpen(true);
+  };
 
   // 1. Carregar Planos do Firestore em Tempo Real
   useEffect(() => {
@@ -107,7 +139,11 @@ const AdminPlans = () => {
   // 3. Função de Salvar (Corrigindo o bug de não salvar)
   const handleSave = async () => {
     if (!formData.name || !formData.priceMonthly) {
-      alert("Por favor, preencha o nome e o preço mensal.");
+      showAlert(
+        "Campos Obrigatórios",
+        "Por favor, preencha o nome e o preço mensal.",
+        "warning"
+      );
       return;
     }
 
@@ -143,22 +179,33 @@ const AdminPlans = () => {
         });
       }
       setIsModalOpen(false);
+      showAlert("Sucesso", "Plano salvo com sucesso.", "success");
     } catch (error: any) {
       console.error("Erro ao salvar plano:", error);
-      alert(`Erro ao salvar: ${error.message}`);
+      showAlert("Erro", `Erro ao salvar: ${error.message}`, "error");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este plano?")) {
-      try {
-        await deleteDoc(doc(db, "artifacts", appId, "plans", id));
-      } catch (error) {
-        console.error("Erro ao excluir:", error);
-      }
-    }
+    setConfirmConfig({
+      title: "Excluir Plano",
+      message:
+        "Tem certeza que deseja excluir este plano? Clientes associados podem ser afetados.",
+      type: "error",
+      confirmText: "Excluir",
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "artifacts", appId, "plans", id));
+        } catch (error) {
+          console.error("Erro ao excluir:", error);
+          showAlert("Erro", "Erro ao excluir plano.", "error");
+        }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
   return (
@@ -471,6 +518,18 @@ const AdminPlans = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
+      />
     </div>
   );
 };

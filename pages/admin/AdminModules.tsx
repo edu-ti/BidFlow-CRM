@@ -25,6 +25,7 @@ import {
   orderBy,
   setDoc,
 } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 interface Module {
   id: string;
@@ -95,6 +96,37 @@ const AdminModules = () => {
   const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Confirm Modal State
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm?: () => void;
+    confirmText?: string;
+    showCancel?: boolean;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: ConfirmModalType = "info"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: false,
+      confirmText: "OK",
+      onConfirm: () => setIsConfirmOpen(false),
+    });
+    setIsConfirmOpen(true);
+  };
+
   // 1. Carregar Módulos
   useEffect(() => {
     const modulesRef = collection(db, "artifacts", appId, "modules");
@@ -156,7 +188,7 @@ const AdminModules = () => {
       });
     } catch (error) {
       console.error("Erro ao alterar status:", error);
-      alert("Erro ao atualizar. Verifique a conexão.");
+      showAlert("Erro", "Erro ao atualizar. Verifique a conexão.", "error");
     }
   };
 
@@ -179,9 +211,10 @@ const AdminModules = () => {
         }
       );
       setIsModalOpen(false);
+      showAlert("Sucesso", "Módulo salvo com sucesso.", "success");
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar módulo.");
+      showAlert("Erro", "Erro ao salvar módulo.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -388,6 +421,18 @@ const AdminModules = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
+      />
     </div>
   );
 };

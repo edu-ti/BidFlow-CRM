@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { db, appId } from "../../lib/firebase";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 // --- Interfaces ---
 interface SystemSettings {
@@ -83,9 +84,9 @@ const defaultSettings: SystemSettings = {
   identity: {
     name: "BidFlow",
     domain: "app.bidflow.com",
-    logo: "",
-    darkLogo: "",
-    favicon: "",
+    logo: "/assets/logo-1200.png", // NOVA LOGO PADRÃO AQUI
+    darkLogo: "/assets/logo-1200.png",
+    favicon: "/assets/icon-seta.png",
   },
   smtp: {
     host: "smtp.gmail.com",
@@ -126,6 +127,57 @@ const AdminSettings = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showSmtpPass, setShowSmtpPass] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Confirm Modal State
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm?: () => void;
+    confirmText?: string;
+    showCancel?: boolean;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showConfirm = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    type: ConfirmModalType = "warning"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: true,
+      confirmText: "Confirmar",
+      onConfirm: () => {
+        onConfirm();
+        setIsConfirmOpen(false);
+      },
+    });
+    setIsConfirmOpen(true);
+  };
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: ConfirmModalType = "info"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: false,
+      confirmText: "OK",
+      onConfirm: () => setIsConfirmOpen(false),
+    });
+    setIsConfirmOpen(true);
+  };
 
   // Refs para Upload
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -242,23 +294,28 @@ const AdminSettings = () => {
         doc(db, "artifacts", appId, "settings", "general_config"),
         settings
       );
-      alert("Configurações salvas com sucesso!");
+      showAlert("Sucesso", "Configurações salvas com sucesso!", "success");
     } catch (error: any) {
       console.error("Erro ao salvar:", error);
-      alert(`Erro ao salvar: ${error.message}`);
+      showAlert("Erro", `Erro ao salvar: ${error.message}`, "error");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleRegenerateKey = () => {
-    if (confirm("Regenerar a chave interna?")) {
-      handleChange(
-        "api",
-        "key",
-        "sk_live_" + Math.random().toString(36).substring(2)
-      );
-    }
+    showConfirm(
+      "Regenerar Chave Interna",
+      "Isso invalidará a chave anterior. Tem certeza que deseja continuar?",
+      () => {
+        handleChange(
+          "api",
+          "key",
+          "sk_live_" + Math.random().toString(36).substring(2)
+        );
+      },
+      "warning"
+    );
   };
 
   const handleFileUpload = (
@@ -272,13 +329,19 @@ const AdminSettings = () => {
   };
 
   const handleTestEmail = () => {
-    alert(
-      `Enviando e-mail de teste para ${settings.smtp?.user || "admin"}... OK!`
+    showAlert(
+      "Teste de Email",
+      `Enviando e-mail de teste para ${settings.smtp?.user || "admin"}...`,
+      "info"
     );
   };
 
   const handleExportData = () => {
-    alert("Exportação iniciada.");
+    showAlert(
+      "Exportação",
+      "Exportação iniciada. O download começará em breve.",
+      "info"
+    );
   };
 
   if (isLoading)
@@ -901,6 +964,18 @@ const AdminSettings = () => {
           </div>
         </div>
       </div>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
+      />
     </div>
   );
 };
