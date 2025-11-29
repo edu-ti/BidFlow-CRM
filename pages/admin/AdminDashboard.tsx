@@ -60,6 +60,33 @@ const AdminDashboard = () => {
   const [planDistribution, setPlanDistribution] = useState<any[]>([]);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // --- LÓGICA DE TEMA PARA GRÁFICOS ---
+  const [isDark, setIsDark] = useState(
+    document.documentElement.classList.contains("dark")
+  );
+
+  useEffect(() => {
+    // Observa mudanças na classe 'dark' no elemento <html>
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  // Cores dinâmicas baseadas no tema
+  const chartTheme = {
+    grid: isDark ? "#374151" : "#e2e8f0", // dark:border-gray-700 vs gray-200
+    text: isDark ? "#9ca3af" : "#64748b", // dark:text-gray-400 vs text-gray-500
+    tooltipBg: isDark ? "#1f2937" : "#ffffff", // dark:bg-gray-800 vs white
+    tooltipBorder: isDark ? "#374151" : "#e2e8f0",
+    tooltipText: isDark ? "#f3f4f6" : "#1e293b",
+    cursor: isDark ? "#374151" : "#f1f5f9",
+  };
+  // -------------------------------------
 
   useEffect(() => {
     // Buscar empresas para calcular métricas
@@ -142,8 +169,10 @@ const AdminDashboard = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard Master</h1>
-        <p className="text-gray-500 mt-1">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Dashboard Master
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
           Visão geral de toda a operação do SaaS.
         </p>
       </div>
@@ -199,8 +228,8 @@ const AdminDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-800 mb-6">
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
             Crescimento de Receita (Simulado)
           </h3>
           <div className="h-80">
@@ -209,22 +238,30 @@ const AdminDashboard = () => {
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke="#f1f5f9"
+                  stroke={chartTheme.grid} // Cor dinâmica da grade
                 />
                 <XAxis
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "#64748b" }}
+                  tick={{ fill: chartTheme.text }} // Cor dinâmica do texto X
                   dy={10}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "#64748b" }}
-                  tickFormatter={(value) => `R$${value / 1000}k`}
+                  tick={{ fill: chartTheme.text }} // Cor dinâmica do texto Y
+                  tickFormatter={(value) => `R$ ${value / 1000}k`}
                 />
-                <Tooltip formatter={(value) => [`R$ ${value}`, "Receita"]} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: chartTheme.tooltipBg,
+                    borderColor: chartTheme.tooltipBorder,
+                    color: chartTheme.tooltipText,
+                    borderRadius: "8px",
+                  }}
+                  formatter={(value) => [`R$ ${value}`, "Receita"]}
+                />
                 <Line
                   type="monotone"
                   dataKey="value"
@@ -239,8 +276,8 @@ const AdminDashboard = () => {
         </div>
 
         {/* Plan Distribution */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-800 mb-6">
+        <div className="bbg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
             Distribuição de Planos
           </h3>
           <div className="h-64">
@@ -266,7 +303,14 @@ const AdminDashboard = () => {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: chartTheme.tooltipBg,
+                    borderColor: chartTheme.tooltipBorder,
+                    color: chartTheme.tooltipText,
+                    borderRadius: "8px",
+                  }}
+                />
                 <Legend verticalAlign="bottom" height={36} />
               </PieChart>
             </ResponsiveContainer>
@@ -276,8 +320,8 @@ const AdminDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* New Clients Bar Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-800 mb-6">
+        <div className="llg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-all">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6 transition-colors">
             Novos Clientes (Simulado)
           </h3>
           <div className="h-64">
@@ -286,21 +330,29 @@ const AdminDashboard = () => {
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke="#f1f5f9"
+                  stroke={chartTheme.grid} // Cor dinâmica
                 />
                 <XAxis
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "#64748b" }}
+                  stroke={chartTheme.grid} // Cor dinâmica
                   dy={10}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "#64748b" }}
+                  tick={{ fill: chartTheme.text }} // Cor dinâmica
                 />
-                <Tooltip cursor={{ fill: "#f8fafc" }} />
+                <Tooltip
+                  cursor={{ fill: chartTheme.cursor }} // Cor dinâmica do cursor
+                  contentStyle={{
+                    backgroundColor: chartTheme.tooltipBg,
+                    borderColor: chartTheme.tooltipBorder,
+                    color: chartTheme.tooltipText,
+                    borderRadius: "8px",
+                  }}
+                />
                 <Bar
                   dataKey="value"
                   fill="#6C63FF"
@@ -313,26 +365,30 @@ const AdminDashboard = () => {
         </div>
 
         {/* Recent Logs */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
             Atividade Recente
           </h3>
           <div className="space-y-4">
             {/* Logs estáticos por enquanto, idealmente viriam de uma coleção 'logs' */}
-            <div className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0">
-              <div className="p-2 rounded-full mt-1 bg-indigo-100 text-indigo-600">
+            <div className="flex items-start gap-3 pb-3 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+              <div className="p-2 rounded-full mt-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                 <AlertCircle size={14} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-200">
                   Login de Admin
                 </p>
-                <p className="text-xs text-gray-500">Sistema • Master</p>
-                <span className="text-[10px] text-gray-400">Agora mesmo</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Sistema • Master
+                </p>
+                <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                  Agora mesmo
+                </span>
               </div>
             </div>
           </div>
-          <button className="w-full mt-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+          <button className="w-full mt-4 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition">
             Ver todos os logs
           </button>
         </div>

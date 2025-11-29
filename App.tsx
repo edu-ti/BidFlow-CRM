@@ -115,15 +115,17 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
     to={to}
     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
       active
-        ? "bg-indigo-50 text-[#6C63FF]"
-        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+        ? "bg-indigo-50 text-[#6C63FF] dark:bg-indigo-900/20 dark:text-[#818cf8]"
+        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
     }`}
   >
     {/* Ícone com cor da marca se ativo ou se estiver em hover (efeito visual melhorado) */}
     <Icon
       size={20}
       className={`transition-colors ${
-        active ? "text-[#6C63FF]" : "text-gray-500 group-hover:text-[#6C63FF]"
+        active
+          ? "text-[#6C63FF] dark:text-[#818cf8]"
+          : "text-gray-500 group-hover:text-[#6C63FF] dark:text-gray-500 dark:group-hover:text-[#818cf8]"
       }`}
     />
     <span>{label}</span>
@@ -290,19 +292,19 @@ const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div
-      className={`flex h-screen bg-gray-100 overflow-hidden ${
+      className={`flex h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden transition-colors duration-200 ${
         isDarkMode ? "dark" : ""
       }`}
     >
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-full hidden md:flex z-20 transition-all duration-300">
-        <div className="p-6 flex items-center gap-2 border-b border-gray-100">
+      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full hidden md:flex z-20 transition-all duration-300">
+        <div className="p-6 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700">
           <div
-             className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold ${
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold ${
               type === "admin" ? "bg-[#ffffff]" : "bg-indigo-600"
             }`}
           >
-             {type === "admin" ? "M" : "B" } 
+            {type === "admin" ? "M" : "B"}
           </div>
           <span className="text-xl font-bold text-gray-800">
             {type === "admin" ? (
@@ -331,17 +333,17 @@ const Layout: React.FC<LayoutProps> = ({
 
         {/* Área do Usuário com Menu Dropdown */}
         <div
-          className="p-4 border-t border-gray-100 relative"
+          className="p-4 border-t border-gray-100 dark:border-gray-700 relative"
           ref={userMenuRef}
         >
           {/* Menu Flutuante */}
           {isUserMenuOpen && (
-            <div className="absolute bottom-20 left-4 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-2 z-50">
+            <div className="absolute bottom-20 left-4 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in slide-in-from-bottom-2 z-50">
               <div className="p-1">
                 {/* Botão Meu Perfil - Vai para Configurações */}
                 <button
                   onClick={handleNavigateToSettings}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
                 >
                   <User size={16} className="text-gray-500" /> Meu Perfil
                 </button>
@@ -349,26 +351,33 @@ const Layout: React.FC<LayoutProps> = ({
                 {/* Botão Alterar Senha - Vai para Configurações */}
                 <button
                   onClick={handleNavigateToSettings}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
                 >
-                  <Lock size={16} className="text-gray-500" /> Alterar Senha
+                  <Lock
+                    size={16}
+                    className="text-gray-500 dark:text-gray-400"
+                  />{" "}
+                  Alterar Senha
                 </button>
 
                 {/* Botão Preferências - Vai para Configurações */}
                 <button
                   onClick={handleNavigateToSettings}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
                 >
-                  <SettingsIcon size={16} className="text-gray-500" />{" "}
+                  <SettingsIcon
+                    size={16}
+                    className="text-gray-500 dark:text-gray-400"
+                  />{" "}
                   Preferências
                 </button>
 
-                <div className="h-px bg-gray-100 my-1"></div>
+                <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
 
                 {/* Botão Modo Escuro - Funcional */}
                 <button
                   onClick={() => setIsDarkMode(!isDarkMode)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition"
+                  className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
                 >
                   <div className="flex items-center gap-2">
                     {isDarkMode ? (
@@ -380,12 +389,12 @@ const Layout: React.FC<LayoutProps> = ({
                   </div>
                 </button>
 
-                <div className="h-px bg-gray-100 my-1"></div>
+                <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
 
                 {/* Botão Sair */}
                 <button
                   onClick={onLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition font-medium"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition font-medium"
                 >
                   <LogOut size={16} /> Sair
                 </button>
@@ -396,22 +405,24 @@ const Layout: React.FC<LayoutProps> = ({
           {/* Cartão do Usuário (Clicável para abrir menu) */}
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className="flex items-center gap-3 px-3 py-2 w-full hover:bg-gray-50 rounded-xl transition text-left group border border-transparent hover:border-gray-100"
+            className="flex items-center gap-3 px-3 py-2 w-full hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-left group border border-transparent hover:border-gray-100 dark:hover:border-gray-600"
           >
             <img
               src={user.avatar}
               alt="User"
-              className="w-9 h-9 rounded-full border border-gray-200 object-cover bg-white"
+              className="w-9 h-9 rounded-full border border-gray-200 dark:border-gray-600 object-cover bg-white"
             />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 truncate">
+              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
                 {user.name}
               </p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {user.email}
+              </p>
             </div>
             <ChevronUp
               size={16}
-              className={`text-gray-400 transition-transform duration-200 ${
+              className={`text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
                 isUserMenuOpen ? "rotate-180" : ""
               }`}
             />
@@ -421,17 +432,22 @@ const Layout: React.FC<LayoutProps> = ({
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <header className="bg-white h-16 border-b border-gray-200 flex items-center px-4 md:hidden justify-between">
-          <span className="font-bold text-gray-800">BidFlow</span>
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center px-4 md:hidden justify-between">
+          {/* NOVA LOGO MOBILE AQUI */}
+          <img
+            src="/assets/logo-1200.png"
+            alt="BidFlow"
+            className="h-8 object-contain"
+          />
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 text-gray-600"
+            className="p-2 text-gray-600 dark:text-gray-300"
           >
             Menu
           </button>
         </header>
 
-        <div className="flex-1 overflow-auto p-4 md:p-8 bg-gray-50/50">
+        <div className="flex-1 overflow-auto p-4 md:p-8 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
           {children}
         </div>
       </main>

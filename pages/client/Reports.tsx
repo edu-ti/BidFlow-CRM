@@ -35,27 +35,46 @@ import {
   Timestamp,
 } from "firebase/firestore";
 
-// Cores para o gráfico
 const COLORS = ["#10b981", "#6366f1", "#f59e0b", "#9ca3af"];
 
 const Reports = () => {
   const [dateRange, setDateRange] = useState<"7d" | "30d" | "3m">("30d");
-  const [showCustomDate, setShowCustomDate] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Estados de Dados Reais
   const [stats, setStats] = useState({
     leads: 0,
-    leadsChange: 0, // % de crescimento
+    leadsChange: 0,
     msgs: 0,
     conversion: "0%",
     cost: "R$ 0,00",
   });
   const [chartData, setChartData] = useState<any[]>([]);
   const [sourceData, setSourceData] = useState<any[]>([]);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
 
-  // Função para buscar dados reais do Firestore
+  // --- LÓGICA DE TEMA ---
+  const [isDark, setIsDark] = useState(
+    document.documentElement.classList.contains("dark")
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const chartTheme = {
+    grid: isDark ? "#374151" : "#f3f4f6",
+    text: isDark ? "#9ca3af" : "#6b7280",
+    tooltipBg: isDark ? "#1f2937" : "#ffffff",
+    tooltipBorder: isDark ? "#374151" : "#e5e7eb",
+    tooltipText: isDark ? "#f3f4f6" : "#1f293b",
+  };
+  // ----------------------
+
   useEffect(() => {
     const fetchData = async () => {
       if (!auth.currentUser) return;
@@ -63,14 +82,12 @@ const Reports = () => {
       const uid = auth.currentUser.uid;
 
       try {
-        // 1. Definir data de corte baseada no filtro
         const now = new Date();
         const pastDate = new Date();
         if (dateRange === "7d") pastDate.setDate(now.getDate() - 7);
         if (dateRange === "30d") pastDate.setDate(now.getDate() - 30);
         if (dateRange === "3m") pastDate.setDate(now.getDate() - 90);
 
-        // 2. Buscar Contatos (Leads)
         const contactsRef = collection(
           db,
           "artifacts",
@@ -79,20 +96,18 @@ const Reports = () => {
           uid,
           "contacts"
         );
-        const contactsSnap = await getDocs(contactsRef); // Pega tudo para filtrar em memória (em app real usaria queries compostas)
+        const contactsSnap = await getDocs(contactsRef);
 
         const allContacts = contactsSnap.docs.map((d) => ({
           ...d.data(),
           createdAt: d.data().createdAt,
         }));
 
-        // Filtrar por data
         const filteredContacts = allContacts.filter((c: any) => {
           const created = new Date(c.createdAt);
           return created >= pastDate;
         });
 
-        // 3. Buscar Negócios (Para Conversão)
         const dealsRef = collection(
           db,
           "artifacts",
@@ -103,9 +118,8 @@ const Reports = () => {
         );
         const dealsSnap = await getDocs(dealsRef);
         const allDeals = dealsSnap.docs.map((d) => d.data());
-        const wonDeals = allDeals.filter((d: any) => d.stageId === "s4"); // s4 = Fechado (assumindo config padrão)
+        const wonDeals = allDeals.filter((d: any) => d.stageId === "s4");
 
-        // 4. Calcular Estatísticas
         const totalLeads = filteredContacts.length;
         const conversionRate =
           totalLeads > 0
@@ -114,13 +128,12 @@ const Reports = () => {
 
         setStats({
           leads: totalLeads,
-          leadsChange: 0, // Implementar lógica de comparação com período anterior se desejar
-          msgs: 0, // Requer coleção de mensagens
+          leadsChange: 0,
+          msgs: 0,
           conversion: `${conversionRate}%`,
-          cost: "R$ 0,00", // Requer dados de ads
+          cost: "R$ 0,00",
         });
 
-        // 5. Gerar Dados do Gráfico (Volume Diário de Leads)
         const dailyData: Record<string, number> = {};
         filteredContacts.forEach((c: any) => {
           const dateKey = new Date(c.createdAt).toLocaleDateString("pt-BR", {
@@ -130,7 +143,6 @@ const Reports = () => {
           dailyData[dateKey] = (dailyData[dateKey] || 0) + 1;
         });
 
-        // Preencher dias vazios no gráfico
         const chart = [];
         for (let d = new Date(pastDate); d <= now; d.setDate(d.getDate() + 1)) {
           const key = d.toLocaleDateString("pt-BR", {
@@ -140,12 +152,11 @@ const Reports = () => {
           chart.push({
             name: key,
             leads: dailyData[key] || 0,
-            msgs: Math.floor(Math.random() * 10), // Mock de mensagens por enquanto
+            msgs: Math.floor(Math.random() * 10),
           });
         }
         setChartData(chart);
 
-        // 6. Gerar Dados de Origem (Mockado por enquanto pois 'source' não existe no contato)
         setSourceData([
           {
             name: "WhatsApp",
@@ -162,7 +173,7 @@ const Reports = () => {
     };
 
     fetchData();
-  }, [dateRange]); // Recarrega quando muda o filtro
+  }, [dateRange]);
 
   const handlePrint = () => {
     setTimeout(() => window.print(), 100);
@@ -170,8 +181,8 @@ const Reports = () => {
 
   const getRangeButtonClass = (range: string) => {
     return dateRange === range
-      ? "px-3 py-1.5 text-sm font-medium bg-indigo-100 text-indigo-700 rounded-md shadow-sm transition-all"
-      : "px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-md transition-all";
+      ? "px-3 py-1.5 text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 rounded-md shadow-sm transition-all"
+      : "px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-all";
   };
 
   if (isLoading)
@@ -185,8 +196,10 @@ const Reports = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Relatórios</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">
+            Relatórios
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 transition-colors">
             Métricas baseadas em dados reais do CRM.
           </p>
         </div>
@@ -195,12 +208,12 @@ const Reports = () => {
           <button
             type="button"
             onClick={handlePrint}
-            className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-50 font-medium transition shadow-sm"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition shadow-sm"
           >
             <Printer size={18} /> Imprimir
           </button>
 
-          <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
             <button
               onClick={() => setDateRange("7d")}
               className={getRangeButtonClass("7d")}
@@ -257,8 +270,8 @@ const Reports = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gráfico de Volume */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 transition-colors">
             Volume de Leads
           </h3>
           <div className="h-80">
@@ -277,16 +290,22 @@ const Reports = () => {
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "#6b7280", fontSize: 12 }}
+                  tick={{ fill: chartTheme.text, fontSize: 12 }}
                   dy={10}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "#6b7280", fontSize: 12 }}
+                  tick={{ fill: chartTheme.text, fontSize: 12 }}
                 />
-                <CartesianGrid vertical={false} stroke="#f3f4f6" />
-                <Tooltip />
+                <CartesianGrid vertical={false} stroke={chartTheme.grid} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: chartTheme.tooltipBg,
+                    borderColor: chartTheme.tooltipBorder,
+                    color: chartTheme.tooltipText,
+                  }}
+                />
                 <Area
                   type="monotone"
                   dataKey="leads"
@@ -302,8 +321,8 @@ const Reports = () => {
         </div>
 
         {/* Gráfico de Origem */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 transition-colors">
             Origem dos Leads
           </h3>
           <div className="h-80 flex items-center justify-center">
@@ -317,6 +336,7 @@ const Reports = () => {
                   outerRadius={110}
                   paddingAngle={5}
                   dataKey="value"
+                  stroke="none"
                 >
                   {sourceData.map((entry, index) => (
                     <Cell
@@ -325,7 +345,13 @@ const Reports = () => {
                     />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: chartTheme.tooltipBg,
+                    borderColor: chartTheme.tooltipBorder,
+                    color: chartTheme.tooltipText,
+                  }}
+                />
                 <Legend verticalAlign="bottom" height={36} />
               </PieChart>
             </ResponsiveContainer>
@@ -333,17 +359,18 @@ const Reports = () => {
         </div>
       </div>
 
-      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-start gap-3">
-        <AlertCircle className="text-blue-600 mt-0.5" size={20} />
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-lg p-4 flex items-start gap-3 transition-colors">
+        <AlertCircle
+          className="text-blue-600 dark:text-blue-400 mt-0.5"
+          size={20}
+        />
         <div>
-          <p className="text-sm text-blue-800 font-medium">
+          <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
             Dados em tempo real
           </p>
-          <p className="text-xs text-blue-600 mt-1">
+          <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
             Os gráficos acima agora refletem os dados reais cadastrados na aba{" "}
-            <strong>Contatos</strong> e <strong>Funil</strong>. Métricas de
-            mensagens e campanhas aparecerão assim que você começar a utilizar
-            esses módulos.
+            <strong>Contatos</strong> e <strong>Funil</strong>.
           </p>
         </div>
       </div>

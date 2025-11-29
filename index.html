@@ -1,20 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
+
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BidFlow CRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class', // ISSO ATIVA O MODO ESCURO MANUAL
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              // Personalizações opcionais de cor para o modo dark se quiser
+              dark: {
+                bg: '#111827',
+                card: '#1f2937',
+                border: '#374151'
+              }
+            }
+          }
+        }
+      }
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="shortcut icon" href="/assets/favicon.ico">
-
     <style>
-      body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+
       /* Custom Scrollbar for Chat */
-      .scrollbar-hide::-webkit-scrollbar { display: none; }
-      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
     </style>
-  <script type="importmap">
+    <script type="importmap">
 {
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.2.0",
@@ -26,9 +54,11 @@
   }
 }
 </script>
-</head>
+  </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
+
 </html>
