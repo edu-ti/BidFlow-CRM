@@ -298,7 +298,7 @@ const AdminFinance = () => {
 
   if (error)
     return (
-      <div className="flex flex-col justify-center items-center h-96 text-red-600">
+      <div className="flex flex-col justify-center items-center h-96 text-red-600 dark:text-red-400">
         <AlertCircle className="w-12 h-12 mb-2" />
         <p>{error}</p>
       </div>
@@ -307,7 +307,9 @@ const AdminFinance = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Financeiro
+        </h1>
         <button
           onClick={() => openModal()}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition shadow-sm flex items-center gap-2"
@@ -353,11 +355,11 @@ const AdminFinance = () => {
         />
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row justify-between gap-4 bg-gray-50/50">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row justify-between gap-4 bg-gray-50/50 dark:bg-gray-900/50">
           <div className="flex items-center gap-2">
-            <FileText size={20} className="text-gray-500" />
-            <h3 className="font-bold text-gray-800">Faturas</h3>
+            <FileText size={20} className="text-gray-500 dark:text-gray-400" />
+            <h3 className="font-bold text-gray-800 dark:text-white">Faturas</h3>
           </div>
           <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
             <div className="relative">
@@ -368,13 +370,13 @@ const AdminFinance = () => {
               <input
                 type="text"
                 placeholder="Buscar fatura ou cliente..."
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-64"
+                className="pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-64 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <select
-              className="pl-3 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+              className="pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -386,7 +388,7 @@ const AdminFinance = () => {
             </select>
             <button
               onClick={clearFilters}
-              className="flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 bg-white transition active:bg-gray-200"
+              className="lex items-center justify-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 transition active:bg-gray-200"
               title="Limpar Filtros"
             >
               <Filter size={16} /> Limpar
@@ -396,7 +398,7 @@ const AdminFinance = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-semibold border-b border-gray-200">
+            <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold border-b border-gray-200 dark:border-gray-700">
               <tr>
                 <th className="p-4">Fatura</th>
                 <th className="p-4">Cliente</th>
@@ -406,34 +408,37 @@ const AdminFinance = () => {
                 <th className="p-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {filteredInvoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-gray-50 transition group">
-                  <td className="p-4 font-mono text-xs text-gray-500">
+                <tr
+                  key={inv.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition group"
+                >
+                  <td className="p-4 font-mono text-xs text-gray-500 dark:text-gray-400">
                     #{inv.id.substring(0, 8).toUpperCase()}
                   </td>
-                  <td className="p-4 font-medium text-gray-900">
+                  <td className="p-4 font-medium text-gray-900 dark:text-white">
                     {inv.companyName}
                   </td>
-                  <td className="p-4 font-bold text-gray-800">
+                  <td className="p-4 font-bold text-gray-800 dark:text-gray-200">
                     {Number(inv.amount).toLocaleString("pt-BR", {
                       style: "currency",
                       currency: "BRL",
                     })}
                   </td>
-                  <td className="p-4 text-gray-600">
+                  <td className="p-4 text-gray-600 dark:text-gray-300">
                     {new Date(inv.dueDate).toLocaleDateString("pt-BR")}
                   </td>
                   <td className="p-4">
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
                         inv.status === "PAID"
-                          ? "bg-green-100 text-green-700"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
                           : inv.status === "PENDING"
-                          ? "bg-yellow-100 text-yellow-700"
+                          ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
                           : inv.status === "OVERDUE"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-gray-100 text-gray-600"
+                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                          : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                       }`}
                     >
                       {inv.status === "PAID"
@@ -449,21 +454,21 @@ const AdminFinance = () => {
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => openModal(inv)}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                        className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition"
                         title="Ver/Editar"
                       >
                         <Eye size={18} />
                       </button>
                       <button
                         onClick={() => openModal(inv)}
-                        className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition"
+                        className="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded transition"
                         title="Editar Detalhes"
                       >
                         <Edit size={18} />
                       </button>
                       <button
                         onClick={(e) => handleDownloadReceipt(e, inv)}
-                        className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition"
+                        className="pp-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
                         title="Baixar Recibo"
                       >
                         <Download size={18} />
@@ -474,7 +479,10 @@ const AdminFinance = () => {
               ))}
               {filteredInvoices.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="p-8 text-center text-gray-500 dark:text-gray-400"
+                  >
                     Nenhuma fatura encontrada com estes filtros.
                   </td>
                 </tr>
@@ -486,16 +494,16 @@ const AdminFinance = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-lg text-gray-900">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h3 className="font-bold text-lg text-gray-900 dark:text-white">
                 {editingInvoice
                   ? `Fatura #${editingInvoice.id.substring(0, 6).toUpperCase()}`
                   : "Nova Cobrança"}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
               >
                 <X size={24} />
               </button>
@@ -503,18 +511,18 @@ const AdminFinance = () => {
 
             <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
                   Cliente
                 </label>
                 {editingInvoice ? (
                   <input
                     disabled
-                    className="w-full border bg-gray-100 rounded-lg px-3 py-2 text-gray-600"
+                    className="w-full border bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-600 dark:text-gray-400w-full border bg-gray-100 rounded-lg px-3 py-2 text-gray-600"
                     value={invoiceForm.companyName}
                   />
                 ) : (
                   <select
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={invoiceForm.companyName}
                     onChange={(e) =>
                       setInvoiceForm({
@@ -537,12 +545,12 @@ const AdminFinance = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
                     Valor (R$)
                   </label>
                   <input
                     type="number"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={invoiceForm.amount}
                     onChange={(e) =>
                       setInvoiceForm({
@@ -553,12 +561,12 @@ const AdminFinance = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
                     Vencimento
                   </label>
                   <input
                     type="date"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={invoiceForm.dueDate}
                     onChange={(e) =>
                       setInvoiceForm({
@@ -571,16 +579,16 @@ const AdminFinance = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
                   Status
                 </label>
                 <select
-                  className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none font-bold ${
+                  className={`w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none font-bold bg-white dark:bg-gray-700 ${
                     invoiceForm.status === "PAID"
-                      ? "text-green-600"
+                      ? "text-green-600 dark:text-green-400"
                       : invoiceForm.status === "OVERDUE"
-                      ? "text-red-600"
-                      : "text-yellow-600"
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-yellow-600 dark:text-yellow-400"
                   }`}
                   value={invoiceForm.status}
                   onChange={(e) =>
@@ -598,7 +606,7 @@ const AdminFinance = () => {
               </div>
 
               {editingInvoice && (
-                <div className="flex gap-3 pt-2 border-t border-gray-100">
+                <div className="flex gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
                   <button
                     onClick={handleResendEmail}
                     className="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition flex items-center justify-center gap-2"
@@ -607,7 +615,7 @@ const AdminFinance = () => {
                   </button>
                   <button
                     onClick={(e) => handleDownloadReceipt(e, editingInvoice)}
-                    className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2"
+                    className="flex-1 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2"
                   >
                     <Download size={16} /> Baixar Recibo
                   </button>
@@ -615,10 +623,10 @@ const AdminFinance = () => {
               )}
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg font-medium transition"
               >
                 Cancelar
               </button>

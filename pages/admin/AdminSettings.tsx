@@ -368,19 +368,19 @@ const AdminSettings = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-20">
-      <div className="flex justify-between items-center sticky top-0 bg-gray-100 z-10 py-4 border-b border-gray-200 mb-4">
+      <div className="flex justify-between items-center sticky top-0 bg-gray-100 z-10 py-4 border-b border-gray-200 dark:bg-gray-900 dark:border-gray-700 mb-4 transition-colors">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Configurações do Sistema
           </h1>
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             Gerencie todos os aspectos globais do seu SaaS.
           </p>
         </div>
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="bg-[#6C63FF] text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center gap-2 disabled:opacity-70"
+          className="bg-[#6C63FF] text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 dark:shadow-none flex items-center gap-2 disabled:opacity-70"
         >
           {isSaving ? (
             <Loader2 size={20} className="animate-spin" />
@@ -393,18 +393,18 @@ const AdminSettings = () => {
 
       <div className="grid grid-cols-1 gap-8">
         {/* 01 — Identidade do SaaS */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 transition-colors">
+          <h3 className="text-xl font-bold text-gray-800 dark:bg-gray-800 dark:text-white flex items-center gap-2 mb-6 pb-2 border-b border-gray-100 dark:border-gray-700">
             <Palette size={24} className="text-indigo-600" /> Identidade do SaaS
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 dark:bg-gray-800 text-gray-800 dark:text-white mb-6">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Nome do SaaS
               </label>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.identity?.name || ""}
                 onChange={(e) =>
                   handleChange("identity", "name", e.target.value)
@@ -412,12 +412,12 @@ const AdminSettings = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Domínio
               </label>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.identity?.domain || ""}
                 onChange={(e) =>
                   handleChange("identity", "domain", e.target.value)
@@ -429,7 +429,7 @@ const AdminSettings = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Upload Logo */}
             <div
-              className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 transition cursor-pointer"
+              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition cursor-pointer"
               onClick={() => logoInputRef.current?.click()}
             >
               <input
@@ -446,7 +446,7 @@ const AdminSettings = () => {
                   className="h-12 mx-auto object-contain"
                 />
               ) : (
-                <div className="flex flex-col items-center text-gray-400">
+                <div className="flex flex-col items-center text-gray-400 dark:text-gray-500">
                   <UploadCloud size={32} className="mb-2" />
                   <span className="text-sm font-medium">Logo Principal</span>
                 </div>
@@ -454,7 +454,7 @@ const AdminSettings = () => {
             </div>
             {/* Upload Dark Logo */}
             <div
-              className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 transition cursor-pointer bg-gray-900"
+              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition cursor-pointer bg-gray-900"
               onClick={() => darkLogoInputRef.current?.click()}
             >
               <input
@@ -479,7 +479,7 @@ const AdminSettings = () => {
             </div>
             {/* Upload Favicon */}
             <div
-              className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 transition cursor-pointer"
+              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition cursor-pointer"
               onClick={() => faviconInputRef.current?.click()}
             >
               <input
@@ -496,7 +496,7 @@ const AdminSettings = () => {
                   className="h-8 mx-auto object-contain"
                 />
               ) : (
-                <div className="flex flex-col items-center text-gray-400">
+                <div className="flex flex-col items-center text-gray-400 dark:text-gray-500">
                   <UploadCloud size={32} className="mb-2" />
                   <span className="text-sm font-medium">Favicon</span>
                 </div>
@@ -506,32 +506,32 @@ const AdminSettings = () => {
         </div>
 
         {/* 02 — SMTP */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 transition-colors">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-6 pb-2 border-b border-gray-100 dark:border-gray-700">
             <Mail size={24} className="text-indigo-600" /> Configurações de
             E-mail (SMTP)
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Host SMTP
               </label>
               <input
                 type="text"
                 placeholder="smtp.gmail.com"
-                className="w-full border rounded-lg px-4 py-2.5"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.smtp?.host || ""}
                 onChange={(e) => handleChange("smtp", "host", e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Porta
               </label>
               <input
                 type="number"
                 placeholder="587"
-                className="w-full border rounded-lg px-4 py-2.5"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.smtp?.port || ""}
                 onChange={(e) =>
                   handleChange("smtp", "port", parseInt(e.target.value))
@@ -541,32 +541,32 @@ const AdminSettings = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Usuário
               </label>
               <input
                 type="text"
                 placeholder="email@dominio.com"
-                className="w-full border rounded-lg px-4 py-2.5"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.smtp?.user || ""}
                 onChange={(e) => handleChange("smtp", "user", e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Senha / Token
               </label>
               <div className="relative">
                 <input
                   type={showSmtpPass ? "text" : "password"}
                   placeholder="•••••••"
-                  className="w-full border rounded-lg px-4 py-2.5"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   value={settings.smtp?.pass || ""}
                   onChange={(e) => handleChange("smtp", "pass", e.target.value)}
                 />
                 <button
                   onClick={() => setShowSmtpPass(!showSmtpPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
                 >
                   {showSmtpPass ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -574,13 +574,13 @@ const AdminSettings = () => {
             </div>
           </div>
           <div className="mb-6">
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
               Remetente Padrão
             </label>
             <input
               type="text"
               placeholder='"BidFlow" <no-reply@bidflow.com>'
-              className="w-full border rounded-lg px-4 py-2.5"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               value={settings.smtp?.sender || ""}
               onChange={(e) => handleChange("smtp", "sender", e.target.value)}
             />
@@ -588,7 +588,7 @@ const AdminSettings = () => {
           <div className="flex justify-end">
             <button
               onClick={handleTestEmail}
-              className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 font-medium flex items-center gap-2"
+              className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium flex items-center gap-2"
             >
               <Send size={16} /> Testar Envio
             </button>
@@ -596,17 +596,17 @@ const AdminSettings = () => {
         </div>
 
         {/* 03 — Segurança */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 transition-colors">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-6 pb-2 border-b border-gray-100 dark:border-gray-700">
             <Lock size={24} className="text-indigo-600" /> Segurança do Sistema
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Tempo Máximo de Sessão
               </label>
               <select
-                className="w-full border rounded-lg px-4 py-2.5 bg-white"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.security?.sessionTimeout || "4h"}
                 onChange={(e) =>
                   handleChange("security", "sessionTimeout", e.target.value)
@@ -622,7 +622,7 @@ const AdminSettings = () => {
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Forçar Senha Forte
                 </span>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -638,11 +638,11 @@ const AdminSettings = () => {
                       )
                     }
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600x"></div>
                 </label>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Exigir 2FA (Equipe)
                 </span>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -654,11 +654,11 @@ const AdminSettings = () => {
                       handleChange("security", "require2FA", e.target.checked)
                     }
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                 </label>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Login Google
                 </span>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -670,7 +670,7 @@ const AdminSettings = () => {
                       handleChange("security", "googleLogin", e.target.checked)
                     }
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                 </label>
               </div>
             </div>
@@ -678,17 +678,17 @@ const AdminSettings = () => {
         </div>
 
         {/* 04 — Geral */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 transition-colors">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-6 pb-2 border-b border-gray-100 dark:border-gray-700">
             <Globe size={24} className="text-indigo-600" /> Configurações Gerais
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Idioma
               </label>
               <select
-                className="w-full border rounded-lg px-4 py-2.5 bg-white"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.general?.language || "pt-BR"}
                 onChange={(e) =>
                   handleChange("general", "language", e.target.value)
@@ -700,11 +700,11 @@ const AdminSettings = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Fuso Horário
               </label>
               <select
-                className="w-full border rounded-lg px-4 py-2.5 bg-white"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.general?.timezone || "America/Sao_Paulo"}
                 onChange={(e) =>
                   handleChange("general", "timezone", e.target.value)
@@ -715,11 +715,11 @@ const AdminSettings = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Data
               </label>
               <select
-                className="w-full border rounded-lg px-4 py-2.5 bg-white"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.general?.dateFormat || "DD/MM/YYYY"}
                 onChange={(e) =>
                   handleChange("general", "dateFormat", e.target.value)
@@ -731,11 +731,11 @@ const AdminSettings = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Moeda
               </label>
               <select
-                className="w-full border rounded-lg px-4 py-2.5 bg-white"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.general?.currency || "BRL"}
                 onChange={(e) =>
                   handleChange("general", "currency", e.target.value)
@@ -750,16 +750,16 @@ const AdminSettings = () => {
         </div>
 
         {/* 05 — Backup */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 transition-colors">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-6 pb-2 border-b border-gray-100 dark:border-gray-700">
             <Database size={24} className="text-indigo-600" /> Backup & Dados
           </h3>
-          <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+          <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600">
             <div>
-              <p className="font-bold text-gray-800">
+              <p className="font-bold text-gray-800 dark:text-white">
                 Backup Diário Automático
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Realiza cópia de segurança do banco às 00:00.
               </p>
             </div>
@@ -772,16 +772,16 @@ const AdminSettings = () => {
                   handleChange("backup", "enabled", e.target.checked)
                 }
               />
-              <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-500"></div>
+              <div className="w-14 h-7 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-500"></div>
             </label>
           </div>
           <div className="flex items-end justify-between gap-4">
             <div className="w-full md:w-1/3">
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Retenção (Dias)
               </label>
               <select
-                className="w-full border rounded-lg px-4 py-2.5 bg-white"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.backup?.retention || "30"}
                 onChange={(e) =>
                   handleChange("backup", "retention", e.target.value)
@@ -795,7 +795,7 @@ const AdminSettings = () => {
             </div>
             <button
               onClick={handleExportData}
-              className="border border-indigo-200 text-indigo-600 px-6 py-2.5 rounded-lg hover:bg-indigo-50 font-medium flex items-center gap-2"
+              className="bw-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-whiteborder border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 px-6 py-2.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 font-medium flex items-center gap-2 transition-colors"
             >
               <Download size={18} /> Exportar Relatório Completo
             </button>
@@ -803,13 +803,13 @@ const AdminSettings = () => {
         </div>
 
         {/* 06 — Manutenção */}
-        <div className="bg-red-50 rounded-2xl border border-red-100 shadow-sm p-8">
-          <h3 className="text-xl font-bold text-red-800 flex items-center gap-2 mb-4">
+        <div className="bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/30 shadow-sm p-8 transition-colors">
+          <h3 className="text-xl font-bold text-red-800 dark:text-red-400 flex items-center gap-2 mb-4">
             <AlertOctagon size={24} /> Modo Manutenção
           </h3>
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-red-700 text-sm max-w-2xl">
+              <p className="text-red-700 dark:text-red-300 text-sm max-w-2xl">
                 Ao ativar, o acesso de TODOS os clientes será bloqueado e uma
                 página de manutenção será exibida. Apenas admins (equipe
                 interna) terão acesso.
@@ -817,7 +817,7 @@ const AdminSettings = () => {
               {settings.maintenance?.enabled && (
                 <input
                   type="text"
-                  className="mt-4 w-full border border-red-200 rounded-lg px-4 py-2 text-sm text-red-800 bg-white"
+                  className="mt-4 w-full border border-red-200 dark:border-red-800 rounded-lg px-4 py-2 text-sm text-red-800 dark:text-red-300 bg-white dark:bg-red-900/20"
                   value={settings.maintenance.description || ""}
                   onChange={(e) =>
                     handleChange("maintenance", "description", e.target.value)
@@ -834,24 +834,24 @@ const AdminSettings = () => {
                   handleChange("maintenance", "enabled", e.target.checked)
                 }
               />
-              <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-600"></div>
+              <div className="w-14 h-7 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-600"></div>
             </label>
           </div>
         </div>
 
         {/* 07 — Regras de Trial */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 transition-colors">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-6 pb-2 border-b border-gray-100 dark:border-gray-700">
             <Clock size={24} className="text-indigo-600" /> Regras de Trial
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Dias de Teste Grátis
               </label>
               <input
                 type="number"
-                className="w-full border rounded-lg px-4 py-2.5"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.trial?.days || 7}
                 onChange={(e) =>
                   handleChange("trial", "days", parseInt(e.target.value))
@@ -859,11 +859,11 @@ const AdminSettings = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Plano Padrão do Trial
               </label>
               <select
-                className="w-full border rounded-lg px-4 py-2.5 bg-white"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.trial?.plan || "Pro"}
                 onChange={(e) => handleChange("trial", "plan", e.target.value)}
               >
@@ -876,18 +876,18 @@ const AdminSettings = () => {
         </div>
 
         {/* 08 — Notificações */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 transition-colors">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-6 pb-2 border-b border-gray-100 dark:border-gray-700">
             <Smartphone size={24} className="text-indigo-600" /> Notificações do
             Sistema
           </h3>
           <div className="mb-6">
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
               E-mail para Notificações
             </label>
             <input
               type="email"
-              className="w-full border rounded-lg px-4 py-2.5"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               value={settings.notifications?.email || ""}
               onChange={(e) =>
                 handleChange("notifications", "email", e.target.value)
@@ -903,7 +903,7 @@ const AdminSettings = () => {
             ].map((item) => (
               <label
                 key={item.key}
-                className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
               >
                 <input
                   type="checkbox"
@@ -922,7 +922,7 @@ const AdminSettings = () => {
                     )
                   }
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   {item.label}
                 </span>
               </label>
@@ -931,30 +931,31 @@ const AdminSettings = () => {
         </div>
 
         {/* 09 — APIs Internas */}
-        <div className="bg-gray-50 rounded-2xl border border-gray-200 shadow-sm p-8">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-6">
-            <Server size={24} className="text-gray-600" /> APIs Internas
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 transition-colors">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-6">
+            <Server size={24} className="text-gray-600 dark:text-gray-400" />{" "}
+            APIs Internas
           </h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                 URL Base da API
               </label>
-              <div className="bg-white border rounded-lg px-4 py-3 font-mono text-sm text-gray-600">
+              <div className="bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg px-4 py-3 font-mono text-sm text-gray-600 dark:text-gray-300">
                 {settings.api?.url || ""}
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                 Chave Interna (Secret Key)
               </label>
               <div className="flex gap-2">
-                <div className="bg-white border rounded-lg px-4 py-3 font-mono text-sm text-gray-600 flex-1 truncate">
+                <div className="bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg px-4 py-3 font-mono text-sm text-gray-600 dark:text-gray-300 flex-1 truncate">
                   {settings.api?.key || ""}
                 </div>
                 <button
                   onClick={handleRegenerateKey}
-                  className="bg-white border border-gray-300 p-3 rounded-lg hover:bg-gray-100 text-gray-600"
+                  className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
                   title="Regenerar Chave"
                 >
                   <RefreshCw size={18} />

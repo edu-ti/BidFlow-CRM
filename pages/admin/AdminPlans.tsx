@@ -212,10 +212,10 @@ const AdminPlans = () => {
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Planos e Assinaturas
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
             Configure os pacotes comerciais do seu SaaS.
           </p>
         </div>
@@ -236,10 +236,10 @@ const AdminPlans = () => {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`bg-white rounded-xl border p-6 flex flex-col relative transition-all hover:shadow-lg ${
+              className={`bg-white dark:bg-gray-800 rounded-xl border p-6 flex flex-col relative transition-all hover:shadow-lg ${
                 plan.recommended
-                  ? "border-[#6C63FF] shadow-md ring-1 ring-indigo-100"
-                  : "border-gray-200 shadow-sm"
+                  ? "border-[#6C63FF] shadow-md ring-1 ring-indigo-100 dark:ring-indigo-900"
+                  : "border-gray-200 dark:border-gray-700 shadow-sm"
               }`}
             >
               {plan.recommended && (
@@ -249,16 +249,18 @@ const AdminPlans = () => {
               )}
 
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {plan.name}
+                </h3>
                 <div className="flex gap-2">
                   <button
-                    className="text-gray-400 hover:text-[#6C63FF] transition"
+                    className="text-gray-400 hover:text-[#6C63FF] dark:hover:text-indigo-400 transition"
                     onClick={() => openModal(plan)}
                   >
                     <Edit size={18} />
                   </button>
                   <button
-                    className="text-gray-400 hover:text-red-600 transition"
+                    className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition"
                     onClick={() => handleDelete(plan.id)}
                   >
                     <Trash2 size={18} />
@@ -267,40 +269,40 @@ const AdminPlans = () => {
               </div>
 
               <div className="mb-6">
-                <span className="text-3xl font-bold text-gray-900">
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">
                   R$ {plan.priceMonthly}
                 </span>
-                <span className="text-gray-500">/mês</span>
+                <span className="text-gray-500 dark:text-gray-400">/mês</span>
                 {plan.priceYearly > 0 && (
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     ou R$ {plan.priceYearly} anual
                   </p>
                 )}
               </div>
 
               <div className="flex-1 space-y-3 mb-6">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
+                <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <Check size={16} className="text-green-500" />{" "}
                   {plan.limits.users} Atendente(s)
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
+                <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <Check size={16} className="text-green-500" />{" "}
                   {plan.limits.msgs} Mensagens
                 </div>
                 {plan.modules.chatbot && (
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                     <Check size={16} className="text-green-500" /> Chatbot
                     Incluso
                   </div>
                 )}
                 {plan.modules.automation && (
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                     <Check size={16} className="text-green-500" /> Automação
                     Avançada
                   </div>
                 )}
                 {plan.modules.api && (
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                     <Check size={16} className="text-green-500" /> API Access
                   </div>
                 )}
@@ -308,9 +310,11 @@ const AdminPlans = () => {
             </div>
           ))}
           {plans.length === 0 && (
-            <div className="col-span-full p-12 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300">
+            <div className="col-span-full p-12 text-center bg-gray-50 dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
               <AlertCircle className="mx-auto text-gray-400 mb-3" size={48} />
-              <p className="text-gray-500">Nenhum plano criado.</p>
+              <p className="text-gray-500 dark:text-gray-400">
+                Nenhum plano criado.
+              </p>
             </div>
           )}
         </div>
@@ -319,23 +323,26 @@ const AdminPlans = () => {
       {/* Modal de Edição/Criação */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h3 className="font-bold text-gray-800 dark:text-white">
                 {editingId ? "Editar Plano" : "Criar Novo Plano"}
               </h3>
               <button onClick={() => setIsModalOpen(false)}>
-                <X size={20} className="text-gray-400 hover:text-gray-600" />
+                <X
+                  size={20}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                />
               </button>
             </div>
 
             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nome do Plano
                 </label>
                 <input
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Ex: Enterprise"
                   value={formData.name}
                   onChange={(e) =>
@@ -346,12 +353,12 @@ const AdminPlans = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Preço Mensal (R$)
                   </label>
                   <input
                     type="number"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={formData.priceMonthly}
                     onChange={(e) =>
                       setFormData({
@@ -362,12 +369,12 @@ const AdminPlans = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Preço Anual (R$)
                   </label>
                   <input
                     type="number"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={formData.priceYearly}
                     onChange={(e) =>
                       setFormData({
@@ -381,12 +388,12 @@ const AdminPlans = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Limite Msg/Mês
                   </label>
                   <input
                     type="number"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={formData.limits?.msgs}
                     onChange={(e) =>
                       setFormData({
@@ -400,12 +407,12 @@ const AdminPlans = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Limite Atendentes
                   </label>
                   <input
                     type="number"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={formData.limits?.users}
                     onChange={(e) =>
                       setFormData({
@@ -420,13 +427,13 @@ const AdminPlans = () => {
                 </div>
               </div>
 
-              <div className="pt-2 space-y-3 border-t border-gray-100">
-                <label className="block text-sm font-medium text-gray-700">
+              <div className="pt-2 space-y-3 border-t border-gray-100 dark:border-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Módulos Inclusos
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 rounded border border-transparent hover:border-gray-200">
+                <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
                   <input
-                    type="checkbox"
+                    type="checkbox" 
                     className="rounded text-indigo-600"
                     checked={formData.modules?.chatbot}
                     onChange={(e) =>
@@ -439,9 +446,9 @@ const AdminPlans = () => {
                       })
                     }
                   />
-                  <span className="text-sm">Chatbot Incluso</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Chatbot Incluso</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 rounded border border-transparent hover:border-gray-200">
+                <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
                   <input
                     type="checkbox"
                     className="rounded text-indigo-600"
@@ -456,9 +463,9 @@ const AdminPlans = () => {
                       })
                     }
                   />
-                  <span className="text-sm">Automação Avançada</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Automação Avançada</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 rounded border border-transparent hover:border-gray-200">
+                <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
                   <input
                     type="checkbox"
                     className="rounded text-indigo-600"
@@ -473,7 +480,7 @@ const AdminPlans = () => {
                       })
                     }
                   />
-                  <span className="text-sm">API Access</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">API Access</span>
                 </label>
 
                 <div className="pt-2">
@@ -489,7 +496,7 @@ const AdminPlans = () => {
                         })
                       }
                     />
-                    <span className="text-sm font-bold text-indigo-600">
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
                       Destacar como Recomendado
                     </span>
                   </label>
@@ -497,10 +504,10 @@ const AdminPlans = () => {
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg font-medium transition"
               >
                 Cancelar
               </button>
@@ -531,7 +538,7 @@ const AdminPlans = () => {
         showCancel={confirmConfig.showCancel}
       />
     </div>
-  );
+  )
 };
 
 export default AdminPlans;

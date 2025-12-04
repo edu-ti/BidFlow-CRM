@@ -179,13 +179,16 @@ const AdminInstances = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
         Gerenciador de Instâncias WA
       </h1>
 
       {instances.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl border border-dashed border-gray-300 text-gray-500">
-          <Smartphone size={48} className="mb-4 text-gray-300" />
+        <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400">
+          <Smartphone
+            size={48}
+            className="mb-4 text-gray-300 dark:text-gray-600"
+          />
           <p className="text-lg font-medium">Nenhuma instância encontrada</p>
           <p className="text-sm">
             Adicione instâncias através da aba "Instância WA" dentro dos
@@ -202,7 +205,7 @@ const AdminInstances = () => {
             return (
               <div
                 key={inst.id}
-                className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col h-full"
+                className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-hidden flex flex-col h-full"
               >
                 {/* Borda Status Lateral */}
                 <div
@@ -217,18 +220,18 @@ const AdminInstances = () => {
                     <div
                       className={`p-2.5 rounded-lg ${
                         isOnline
-                          ? "bg-green-100 text-green-600"
-                          : "bg-red-100 text-red-600"
+                          ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                          : "bg-red-100 ark:bg-red-900/30 text-red-600 dark:text-red-400"
                       }`}
                     >
                       <Smartphone size={24} />
                     </div>
                     <div>
                       {/* Nome da Empresa em destaque */}
-                      <h3 className="font-bold text-gray-900 text-base">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-base">
                         {companyName}
                       </h3>
-                      <p className="text-xs text-gray-500 font-mono">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                         ID: {inst.id.substring(0, 8)}...
                       </p>
                     </div>
@@ -236,8 +239,8 @@ const AdminInstances = () => {
                   <span
                     className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
                       isOnline
-                        ? "bg-green-50 text-green-700"
-                        : "bg-red-50 text-red-700"
+                        ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                        : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
                     }`}
                   >
                     {isOnline ? "ONLINE" : "OFFLINE"}
@@ -247,36 +250,42 @@ const AdminInstances = () => {
                 {/* Informações Técnicas */}
                 <div className="space-y-3 mb-6 pl-2 flex-1">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Número</span>
-                    <span className="font-medium text-gray-900">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Número
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {inst.phoneNumber || "-"}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Bateria</span>
-                    <span className="font-medium text-gray-900 flex items-center gap-1">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Bateria
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white flex items-center gap-1">
                       {inst.batteryLevel ? `${inst.batteryLevel}%` : "-"}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Sincronização</span>
-                    <span className="font-medium text-gray-900">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Sincronização
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {formatTimeAgo(inst.lastSync)}
                     </span>
                   </div>
                 </div>
 
                 {/* Botões de Ação */}
-                <div className="flex gap-3 pl-2 mt-auto pt-4 border-t border-gray-50">
+                <div className="flex gap-3 pl-2 mt-auto pt-4 border-t border-gray-50 dark:border-gray-700">
                   <button
                     onClick={() => handleRestart(inst)}
-                    className="flex-1 py-2 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 transition"
+                    className="flex-1 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center gap-2 transition"
                   >
                     <RefreshCw size={14} /> Reiniciar
                   </button>
                   <button
                     onClick={() => handleDisconnect(inst)}
-                    className="flex-1 py-2 border border-red-100 bg-red-50 rounded-lg text-xs font-bold text-red-600 hover:bg-red-100 flex items-center justify-center gap-2 transition"
+                    className="flex-1 py-2 border border-red-100 dark:border-red-900 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 flex items-center justify-center gap-2 transition"
                   >
                     <Power size={14} /> Desconectar
                   </button>

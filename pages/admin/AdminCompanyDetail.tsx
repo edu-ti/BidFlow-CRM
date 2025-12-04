@@ -238,6 +238,69 @@ const AdminCompanyDetail = () => {
     confirmText: "Confirmar",
   });
 
+  // Helpers para o Modal
+  const showConfirm = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    type: ConfirmModalType = "warning"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: true,
+      confirmText: "Confirmar",
+      onConfirm: async () => {
+        await onConfirm();
+        setIsConfirmOpen(false);
+      },
+    });
+    setIsConfirmOpen(true);
+  };
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: ConfirmModalType = "info"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: false,
+      confirmText: "OK",
+      onConfirm: () => setIsConfirmOpen(false),
+    });
+    setIsConfirmOpen(true);
+  };
+
+  // --- LÓGICA DE TEMA PARA GRÁFICOS ---
+  const [isDark, setIsDark] = useState(
+    document.documentElement.classList.contains("dark")
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const chartTheme = {
+    grid: isDark ? "#374151" : "#f3f4f6",
+    text: isDark ? "#9ca3af" : "#6b7280",
+    tooltipBg: isDark ? "#1f2937" : "#ffffff",
+    tooltipBorder: isDark ? "#374151" : "#e5e7eb",
+    tooltipText: isDark ? "#f3f4f6" : "#1f293b",
+    cursor: isDark ? "#374151" : "#f9fafb",
+  };
+  // -------------------------------------
+
   useEffect(() => {
     if (!id) return;
 
@@ -775,9 +838,9 @@ const AdminCompanyDetail = () => {
 
   const renderOverviewTab = () => (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-300">
-      <div className="lg:col-span-8 bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-fit relative">
+      <div className="lg:col-span-8 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm h-fit relative">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-gray-800 flex items-center gap-2">
+          <h3 className="font-bold text-gray-800 dark:text-white flex flex items-center gap-2">
             Informações Gerais
             {isEditing && (
               <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
@@ -791,8 +854,8 @@ const AdminCompanyDetail = () => {
                 <span
                   className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
                     company.status === "active"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-600"
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                   }`}
                 >
                   {company.status}
@@ -802,7 +865,7 @@ const AdminCompanyDetail = () => {
                     setEditForm(JSON.parse(JSON.stringify(company)));
                     setIsEditing(true);
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   <Edit2 size={16} />
                 </button>
@@ -811,7 +874,7 @@ const AdminCompanyDetail = () => {
               <div className="flex gap-2">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600  dark:hover:text-gray-300"
                 >
                   <X size={20} />
                 </button>
@@ -830,11 +893,11 @@ const AdminCompanyDetail = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+                <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                   Nome da Empresa
                 </label>
                 <input
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   value={editForm.name}
                   onChange={(e) =>
                     setEditForm({ ...editForm, name: e.target.value })
@@ -843,11 +906,11 @@ const AdminCompanyDetail = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                     Tipo Documento
                   </label>
                   <select
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none bg-white"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={editForm.documentType}
                     onChange={(e) =>
                       setEditForm({
@@ -861,11 +924,11 @@ const AdminCompanyDetail = () => {
                   </select>
                 </div>
                 <div className="relative">
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                     {editForm.documentType || "Documento"}
                   </label>
                   <input
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={editForm.document}
                     onChange={(e) =>
                       setEditForm({ ...editForm, document: e.target.value })
@@ -884,11 +947,11 @@ const AdminCompanyDetail = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+                <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                   Responsável
                 </label>
                 <input
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   value={editForm.responsible}
                   onChange={(e) =>
                     setEditForm({ ...editForm, responsible: e.target.value })
@@ -897,17 +960,17 @@ const AdminCompanyDetail = () => {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-100">
-              <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+              <h4 className="text-sm font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
                 <MapPin size={14} /> Endereço
               </h4>
               <div className="grid grid-cols-4 gap-3">
                 <div className="col-span-1">
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                  <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                     CEP
                   </label>
                   <input
-                    className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm outline-none focus:border-indigo-500"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={editForm.address?.cep}
                     onChange={(e) =>
                       setEditForm({
@@ -919,21 +982,21 @@ const AdminCompanyDetail = () => {
                   />
                 </div>
                 <div className="col-span-3">
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                  <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                     Rua
                   </label>
                   <input
-                    className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-gray-50"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white"
                     value={editForm.address?.street}
                     readOnly
                   />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                  <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                     Número
                   </label>
                   <input
-                    className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm outline-none focus:border-indigo-500"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={editForm.address?.number}
                     onChange={(e) =>
                       setEditForm({
@@ -947,21 +1010,21 @@ const AdminCompanyDetail = () => {
                   />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                  <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                     Bairro
                   </label>
                   <input
-                    className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-gray-50"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white"
                     value={editForm.address?.neighborhood}
                     readOnly
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                  <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                     Cidade
                   </label>
                   <input
-                    className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-gray-50"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white"
                     value={editForm.address?.city}
                     readOnly
                   />
@@ -972,16 +1035,16 @@ const AdminCompanyDetail = () => {
         ) : (
           <div className="space-y-6">
             <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+              <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                 Nome da Empresa
               </label>
-              <p className="text-lg font-medium text-gray-900 uppercase">
+              <p className="text-lg font-medium text-gray-900 dark:text-white uppercase">
                 {company.name}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-8">
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+                <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                   {company.documentType || "CNPJ"}
                 </label>
                 <p className="text-gray-700">
@@ -989,7 +1052,7 @@ const AdminCompanyDetail = () => {
                 </p>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+                <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                   Responsável
                 </label>
                 <p className="text-gray-700 capitalize">
@@ -998,28 +1061,32 @@ const AdminCompanyDetail = () => {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+              <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
                 Contato
               </label>
-              <p className="text-gray-700 mb-1">{company.email}</p>
-              <p className="text-gray-700">{company.phone}</p>
+              <p className="text-gray-700 dark:text-gray-300 mb-1">
+                {company.email}
+              </p>
+              <p className="text-gray-700 dark:text-gray-300">
+                {company.phone}
+              </p>
             </div>
             {company.address && (
-              <div className="pt-4 border-t border-gray-100">
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-1">
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 flex items-center gap-1">
                   <MapPin size={12} /> Endereço
                 </label>
-                <p className="text-sm text-gray-700 uppercase">
+                <p className="text-sm text-gray-700 dark:text-gray-300 uppercase">
                   {company.address.street}, {company.address.number}{" "}
                   {company.address.complement
                     ? `- ${company.address.complement}`
                     : ""}
                 </p>
-                <p className="text-sm text-gray-700 uppercase">
+                <p className="text-sm text-gray-700 dark:text-gray-300 uppercase">
                   {company.address.neighborhood} - {company.address.city}/
                   {company.address.state}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {company.address.cep}
                 </p>
               </div>
@@ -1029,15 +1096,17 @@ const AdminCompanyDetail = () => {
       </div>
 
       {/* Card Plano & Limites */}
-      <div className="lg:col-span-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-fit">
+      <div className="lg:col-span-4 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm h-fit">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-gray-800">Plano & Limites</h3>
+          <h3 className="font-bold text-gray-800 dark:text-white">
+            Plano & Limites
+          </h3>
           <button
             onClick={() => {
               setSelectedPlan(company.plan);
               setIsPlanModalOpen(true);
             }}
-            className="text-xs text-indigo-600 hover:underline font-medium"
+            className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
           >
             Alterar Plano
           </button>
@@ -1045,23 +1114,23 @@ const AdminCompanyDetail = () => {
 
         <div className="space-y-6">
           <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+            <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">
               Plano Atual
             </label>
             <p className="text-2xl font-bold text-[#6C63FF]">{company.plan}</p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
               Renovação em {company.renewal}
             </p>
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between text-xs font-medium text-gray-600">
+            <div className="flex justify-between text-xs font-medium text-gray-600 dark:text-gray-400">
               <span>Mensagens</span>
               <span>
                 {usage.msgs} / {company.limits?.msgs}
               </span>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-2">
+            <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
               <div
                 className="bg-[#6C63FF] h-full rounded-full"
                 style={{
@@ -1075,13 +1144,13 @@ const AdminCompanyDetail = () => {
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between text-xs font-medium text-gray-600">
+            <div className="flex justify-between text-xs font-medium text-gray-600 dark:text-gray-400">
               <span>Atendentes</span>
               <span>
                 {usage.users} / {company.limits?.users}
               </span>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-2">
+            <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
               <div
                 className="bg-green-500 h-full rounded-full"
                 style={{
@@ -1099,16 +1168,21 @@ const AdminCompanyDetail = () => {
       {/* Modal Alterar Plano - Dinâmico */}
       {isPlanModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800">Alterar Plano</h3>
+          <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h3 className="font-bold text-gray-800 dark:text-white">
+                Alterar Plano
+              </h3>
               <button onClick={() => setIsPlanModalOpen(false)}>
-                <X size={20} className="text-gray-400 hover:text-gray-600" />
+                <X
+                  size={20}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
                   Selecione o Novo Plano
                 </label>
                 <div className="space-y-2">
@@ -1119,36 +1193,36 @@ const AdminCompanyDetail = () => {
                         onClick={() => setSelectedPlan(plan.name)}
                         className={`border rounded-lg p-3 cursor-pointer flex justify-between items-center transition-all ${
                           selectedPlan === plan.name
-                            ? "border-[#6C63FF] bg-indigo-50 ring-1 ring-[#6C63FF]"
-                            : "border-gray-200 hover:bg-gray-50"
+                            ? "border-[#6C63FF] bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-[#6C63FF]"
+                            : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                         }`}
                       >
                         <div>
-                          <p className="font-bold text-sm text-gray-900">
+                          <p className="font-bold text-sm text-gray-900 dark:text-white">
                             {plan.name}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {plan.limits?.users} atendentes •{" "}
                             {plan.limits?.msgs} msgs
                           </p>
                         </div>
-                        <p className="font-bold text-sm text-gray-700">
+                        <p className="font-bold text-sm text-gray-700 dark:text-gray-300">
                           R$ {plan.priceMonthly}
                         </p>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       Nenhum plano cadastrado.
                     </p>
                   )}
                 </div>
               </div>
             </div>
-            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => setIsPlanModalOpen(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm font-medium"
               >
                 Cancelar
               </button>

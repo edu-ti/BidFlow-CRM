@@ -250,48 +250,53 @@ const AdminSupport = () => {
   return (
     <div className="space-y-6 h-[calc(100vh-6rem)] flex flex-col">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Suporte & Tickets</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Suporte & Tickets
+        </h1>
         {/* Botão apenas para teste rápido, já que não temos a tela do cliente aqui */}
         <button
           onClick={handleCreateTestTicket}
-          className="bg-white border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-2"
+          className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center gap-2"
         >
           <Plus size={16} /> Simular Ticket de Cliente
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1 flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex-1 flex flex-col">
         <div className="overflow-y-auto flex-1">
           {tickets.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-500">
-              <LifeBuoy size={48} className="mb-4 text-gray-300" />
+            <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+              <LifeBuoy
+                size={48}
+                className="mb-4 text-gray-300 dark:text-gray-600"
+              />
               <p>Nenhum ticket aberto.</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {tickets.map((ticket) => (
                 <div
                   key={ticket.id}
                   onClick={() => setSelectedTicket(ticket)}
-                  className="p-4 hover:bg-gray-50 flex gap-4 cursor-pointer items-center transition-colors"
+                  className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex gap-4 cursor-pointer items-center transition-colors"
                 >
                   <div
                     className={`p-3 rounded-full ${
                       ticket.status === "OPEN"
-                        ? "bg-red-50 text-red-600"
-                        : "bg-indigo-50 text-indigo-600"
+                        ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                        : "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
                     }`}
                   >
                     <MessageCircle size={24} />
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
                         {ticket.subject}
                       </h3>
                       {getStatusBadge(ticket.status)}
                     </div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {ticket.companyName} • Atualizado em{" "}
                       {new Date(ticket.updatedAt).toLocaleDateString()} às{" "}
                       {new Date(ticket.updatedAt).toLocaleTimeString([], {
@@ -310,28 +315,28 @@ const AdminSupport = () => {
       {/* Modal de Chat */}
       {selectedTicket && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[600px] animate-in zoom-in-95">
+          <div className="bbg-white dark:bg-gray-800 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[600px] animate-in zoom-in-95">
             {/* Header do Chat */}
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
               <div>
-                <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   Ticket #{selectedTicket.id.substring(0, 6).toUpperCase()}
                   {getStatusBadge(selectedTicket.status)}
                 </h3>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {selectedTicket.companyName} - {selectedTicket.subject}
                 </p>
               </div>
               <button
                 onClick={() => setSelectedTicket(null)}
-                className="text-gray-400 hover:text-gray-600 bg-white p-1 rounded-full shadow-sm"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 bg-white dark:bg-gray-700 p-1 rounded-full shadow-sm"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Área de Mensagens */}
-            <div className="flex-1 bg-[#f3f4f6] p-4 overflow-y-auto space-y-4">
+            <div className="flex-1 bg-[#f3f4f6] dark:bg-gray-900 p-4 overflow-y-auto space-y-4">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
@@ -342,8 +347,8 @@ const AdminSupport = () => {
                   <div
                     className={`max-w-[80%] p-3 rounded-xl text-sm shadow-sm relative ${
                       msg.sender === "admin"
-                        ? "bg-indigo-600 text-white rounded-tr-none"
-                        : "bg-white text-gray-800 rounded-tl-none"
+                        ? "bg-indigo-600 text-white -whiterounded-tr-none"
+                        : "bg-white dark:bg-indigo-900 text-gray-800 dark:text-white rounded-tl-none"
                     }`}
                   >
                     {/* Identificação Opcional */}
@@ -363,7 +368,7 @@ const AdminSupport = () => {
                       className={`text-[10px] mt-1 text-right ${
                         msg.sender === "admin"
                           ? "text-indigo-200"
-                          : "text-gray-400"
+                          : "text-gray-400 dark:text-gray-500"
                       }`}
                     >
                       {new Date(msg.createdAt).toLocaleTimeString([], {
@@ -380,10 +385,10 @@ const AdminSupport = () => {
             {/* Input */}
             <form
               onSubmit={handleSendMessage}
-              className="p-4 bg-white border-t border-gray-200 flex gap-3"
+              className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-3"
             >
               <input
-                className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 transition bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 placeholder="Digite sua resposta..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}

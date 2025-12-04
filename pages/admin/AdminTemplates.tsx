@@ -179,50 +179,74 @@ const AdminTemplates = () => {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "Chatbot":
-        return <Bot size={24} className="text-indigo-600" />;
+        return (
+          <Bot size={24} className="text-indigo-600 dark:text-indigo-400" />
+        );
       case "Funil":
-        return <Filter size={24} className="text-orange-600" />;
+        return (
+          <Filter size={24} className="text-orange-600 dark:text-orange-400" />
+        );
       case "Campanha":
-        return <Megaphone size={24} className="text-green-600" />;
+        return (
+          <Megaphone size={24} className="text-green-600 dark:text-green-400" />
+        );
       case "Respostas Prontas":
-        return <MessageSquare size={24} className="text-blue-500" />;
+        return (
+          <MessageSquare
+            size={24}
+            className="text-blue-500 dark:text-blue-400"
+          />
+        );
       case "Fluxo de Atendimento":
-        return <GitFork size={24} className="text-purple-500" />;
+        return (
+          <GitFork size={24} className="text-purple-500 dark:text-purple-400" />
+        );
       case "Tags / Etiquetas":
-        return <Tag size={24} className="text-yellow-600" />;
+        return (
+          <Tag size={24} className="text-yellow-600 dark:text-yellow-400" />
+        );
       case "Sequências de Follow-up":
-        return <Clock size={24} className="text-teal-600" />;
+        return <Clock size={24} className="text-teal-600 dark:text-teal-400" />;
       case "Scripts de Vendas":
-        return <FileText size={24} className="text-red-500" />;
+        return (
+          <FileText size={24} className="text-red-500 dark:text-red-400" />
+        );
       case "Onboarding / Setup Inicial":
-        return <CheckSquare size={24} className="text-cyan-600" />;
+        return (
+          <CheckSquare size={24} className="text-cyan-600 dark:text-cyan-400" />
+        );
       default:
-        return <LayoutTemplate size={24} className="text-gray-600" />;
+        return (
+          <LayoutTemplate
+            size={24}
+            className="text-gray-600 dark:text-gray-400"
+          />
+        );
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
       case "Chatbot":
-        return "bg-indigo-50 border-indigo-100 text-indigo-700";
+        return "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300";
       case "Funil":
-        return "bg-orange-50 border-orange-100 text-orange-700";
+        return "bg-orange-50 dark:bg-orange-900/30 border-orange-100 dark:border-orange-800 text-orange-700 dark:text-orange-300";
       case "Campanha":
-        return "bg-green-50 border-green-100 text-green-700";
+        return "bg-green-50 dark:bg-green-900/30 border-green-100 dark:border-green-800 text-green-700 dark:text-green-300";
       case "Respostas Prontas":
-        return "bg-blue-50 border-blue-100 text-blue-700";
+        return "bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300";
       case "Fluxo de Atendimento":
-        return "bg-purple-50 border-purple-100 text-purple-700";
+        return "bg-purple-50 dark:bg-purple-900/30 border-purple-100 dark:border-purple-800 text-purple-700 dark:text-purple-300";
       case "Tags / Etiquetas":
-        return "bg-yellow-50 border-yellow-100 text-yellow-700";
+        return "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-100 dark:border-yellow-800 text-yellow-700 dark:text-yellow-300";
       case "Sequências de Follow-up":
-        return "bg-teal-50 border-teal-100 text-teal-700";
+        return "bg-teal-50 dark:bg-teal-900/30 border-teal-100 dark:border-teal-800 text-teal-700 dark:text-teal-300";
       case "Scripts de Vendas":
-        return "bg-red-50 border-red-100 text-red-700";
+        return "bg-red-50 dark:bg-red-900/30 border-red-100 dark:border-red-800 text-red-700 dark:text-red-300";
       case "Onboarding / Setup Inicial":
-        return "bg-cyan-50 border-cyan-100 text-cyan-700";
+        return "bg-cyan-50 dark:bg-cyan-900/30 border-cyan-100 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300";
       default:
-        return "bg-gray-50 border-gray-200 text-gray-700";
+        return "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300";
     }
   };
 
@@ -245,10 +269,10 @@ const AdminTemplates = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Templates Globais
           </h1>
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             Crie modelos prontos para agilizar o setup dos seus clientes.
           </p>
         </div>
@@ -261,7 +285,7 @@ const AdminTemplates = () => {
       </div>
 
       {/* Barra de Pesquisa */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -270,13 +294,13 @@ const AdminTemplates = () => {
           <input
             type="text"
             placeholder="Buscar por nome ou categoria..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <select
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"
+          className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
         >
@@ -299,8 +323,11 @@ const AdminTemplates = () => {
 
       {/* Grid de Templates */}
       {filteredTemplates.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-500">
-          <LayoutTemplate size={48} className="mb-4 text-gray-300" />
+        <div className="flex flex-col items-center justify-center p-12 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400">
+          <LayoutTemplate
+            size={48}
+            className="mb-4 text-gray-300 dark:text-gray-600"
+          />
           <p className="text-lg font-medium">Nenhum template encontrado</p>
           <p className="text-sm">
             Crie o primeiro modelo para disponibilizar aos clientes.
@@ -311,20 +338,20 @@ const AdminTemplates = () => {
           {filteredTemplates.map((tpl) => (
             <div
               key={tpl.id}
-              className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition group flex flex-col"
+              className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition group flex flex-col"
             >
               {/* Cabeçalho do Card */}
               <div className="flex justify-between items-start mb-2">
                 <h3
-                  className="font-bold text-gray-900 text-base truncate w-full"
+                  className="font-bold text-gray-900 dark:text-white text-base truncate w-full"
                   title={tpl.name}
                 >
                   {tpl.name}
                 </h3>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-3 right-3 bg-white shadow-sm rounded-lg border border-gray-100">
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-3 right-3 bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-100 dark:border-gray-700">
                   <button
                     onClick={() => handleDelete(tpl.id, tpl.name)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                    className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -347,19 +374,19 @@ const AdminTemplates = () => {
 
               {/* Ícone Central */}
               <div className="flex justify-center my-4">
-                <div className={`p-4 rounded-2xl bg-gray-50`}>
+                <div className={`p-4 rounded-2xl bg-gray-50 dark:bg-gray-700`}>
                   {getTypeIcon(tpl.type)}
                 </div>
               </div>
 
-              <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1 text-center h-10">
+              <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 flex-1 text-center h-10">
                 {tpl.description || "Sem descrição definida."}
               </p>
 
               {/* Botão Editar */}
               <button
                 onClick={() => openModal(tpl)}
-                className="w-full py-2 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-lg hover:bg-indigo-100 transition mt-auto"
+                className="w-full py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition mt-auto"
               >
                 Editar Detalhes
               </button>
@@ -371,14 +398,14 @@ const AdminTemplates = () => {
       {/* Modal de Criação/Edição */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800 text-lg">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-lg rounded-2xl p-0 shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h3 className="font-bold text-gray-800 dark:text-white text-lg">
                 {editingId ? "Editar Template" : "Novo Template"}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
               >
                 <X size={20} />
               </button>
@@ -386,11 +413,11 @@ const AdminTemplates = () => {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nome do Modelo
                 </label>
                 <input
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition"
                   placeholder="Ex: Fluxo Agendamento Clínica"
                   value={formData.name}
                   onChange={(e) =>
@@ -402,11 +429,11 @@ const AdminTemplates = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Categoria
                   </label>
                   <input
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                    className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition44"
                     placeholder="Ex: Saúde, Vendas"
                     value={formData.category}
                     onChange={(e) =>
@@ -415,11 +442,11 @@ const AdminTemplates = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Tipo
                   </label>
                   <select
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={formData.type}
                     onChange={(e) =>
                       setFormData({
@@ -448,11 +475,11 @@ const AdminTemplates = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Descrição
                 </label>
                 <textarea
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition resize-none h-24"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition resize-none h-24"
                   placeholder="Descreva o objetivo deste template..."
                   value={formData.description}
                   onChange={(e) =>
@@ -462,10 +489,10 @@ const AdminTemplates = () => {
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg font-medium transition"
               >
                 Cancelar
               </button>

@@ -240,11 +240,11 @@ const AdminTeam = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "bg-green-100 text-green-700";
+        return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400";
       case "inactive":
-        return "bg-red-100 text-red-700";
+        return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
       default:
-        return "bg-yellow-100 text-yellow-700";
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400";
     }
   };
 
@@ -270,8 +270,10 @@ const AdminTeam = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Equipe Interna</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Equipe Interna
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400">
             Gerencie quem tem acesso administrativo ao BidFlow Master.
           </p>
         </div>
@@ -283,9 +285,9 @@ const AdminTeam = () => {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
         <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-semibold border-b border-gray-200">
+          <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold border-b border-gray-200 dark:border-gray-700">
             <tr>
               <th className="p-4">Membro</th>
               <th className="p-4">Permissões</th>
@@ -293,15 +295,18 @@ const AdminTeam = () => {
               <th className="p-4 text-right">Ações</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
             {members.map((member) => (
-              <tr key={member.id} className="hover:bg-gray-50 transition group">
+              <tr
+                key={member.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition group"
+              >
                 <td className="p-4 flex items-center gap-3">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border ${
                       member.status === "inactive"
-                        ? "bg-gray-100 text-gray-400 border-gray-200"
-                        : "bg-indigo-100 text-indigo-600 border-indigo-200"
+                        ? "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-600"
+                        : "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800"
                     }`}
                   >
                     {member.name.substring(0, 2).toUpperCase()}
@@ -310,39 +315,41 @@ const AdminTeam = () => {
                     <p
                       className={`font-bold ${
                         member.status === "inactive"
-                          ? "text-gray-400"
-                          : "text-gray-900"
+                          ? "text-gray-400 dark:text-gray-500"
+                          : "text-gray-900 dark:text-white"
                       }`}
                     >
                       {member.name}
                     </p>
-                    <p className="text-xs text-gray-500">{member.email}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {member.email}
+                    </p>
                   </div>
                 </td>
                 <td className="p-4">
                   <div className="flex gap-2 flex-wrap">
                     {member.permissions.finance && (
-                      <span className="px-2 py-1 bg-green-50 text-green-700 rounded text-xs border border-green-100">
+                      <span className="px-2 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded text-xs border border-green-100 dark:border-green-800">
                         Financeiro
                       </span>
                     )}
                     {member.permissions.support && (
-                      <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs border border-blue-100">
+                      <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded text-xs border border-blue-100 dark:border-blue-800">
                         Suporte
                       </span>
                     )}
                     {member.permissions.tech && (
-                      <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs border border-purple-100">
+                      <span className="px-2 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 rounded text-xs border border-purple-100 dark:border-purple-800">
                         Técnico
                       </span>
                     )}
                     {member.permissions.sales && (
-                      <span className="px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs border border-orange-100">
+                      <span className="px-2 py-1 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 rounded text-xs border border-orange-100 dark:border-orange-800">
                         Comercial
                       </span>
                     )}
                     {!Object.values(member.permissions).some(Boolean) && (
-                      <span className="text-gray-400 text-xs italic">
+                      <span className="text-gray-400 dark:text-gray-500 text-xs italic">
                         Sem permissões
                       </span>
                     )}
@@ -363,8 +370,8 @@ const AdminTeam = () => {
                       onClick={() => handleToggleStatus(member)}
                       className={`p-2 rounded-lg transition ${
                         member.status === "active"
-                          ? "text-green-600 hover:bg-red-50 hover:text-red-600"
-                          : "text-gray-400 hover:bg-green-50 hover:text-green-600"
+                          ? "text-green-600 dark:text-green-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+                          : "text-gray-400 dark:text-gray-500 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400"
                       }`}
                       title={
                         member.status === "active"
@@ -381,14 +388,14 @@ const AdminTeam = () => {
 
                     <button
                       onClick={() => handleOpenModal(member)}
-                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                      className="p-2 text-gray-400 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition"
                       title="Editar Membro"
                     >
                       <Edit2 size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(member.id, member.name)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                      className="p-2 text-gray-400 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                       title="Remover Membro"
                     >
                       <Trash2 size={18} />
@@ -401,9 +408,12 @@ const AdminTeam = () => {
               <tr>
                 <td
                   colSpan={4}
-                  className="p-8 text-center text-gray-500 bg-gray-50"
+                  className="p-8 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30"
                 >
-                  <User className="mx-auto mb-2 text-gray-300" size={32} />
+                  <User
+                    className="mx-auto mb-2 text-gray-300 dark:text-gray-600"
+                    size={32}
+                  />
                   <p>Nenhum membro na equipe.</p>
                 </td>
               </tr>
@@ -414,9 +424,9 @@ const AdminTeam = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800 text-lg">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl p-0 shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h3 className="font-bold text-gray-800 dark:text-white text-lg">
                 {inviteLink
                   ? "Convite Gerado!"
                   : editingId
@@ -425,7 +435,7 @@ const AdminTeam = () => {
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
               >
                 <X size={20} />
               </button>
@@ -435,11 +445,11 @@ const AdminTeam = () => {
               {!inviteLink ? (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Nome
                     </label>
                     <input
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition"
                       placeholder="Ex: Edu"
                       value={newMember.name}
                       onChange={(e) =>
@@ -449,12 +459,12 @@ const AdminTeam = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Email
                     </label>
                     <input
                       type="email"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition"
                       placeholder="email@exemplo.com"
                       value={newMember.email}
                       onChange={(e) =>
@@ -464,10 +474,10 @@ const AdminTeam = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                       Permissões
                     </label>
-                    <div className="space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="space-y-3 bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
                       <div
                         className="flex items-center gap-3 cursor-pointer group select-none"
                         onClick={() => togglePermission("finance")}
@@ -476,14 +486,14 @@ const AdminTeam = () => {
                           className={`w-5 h-5 rounded border flex items-center justify-center transition ${
                             newMember.permissions.finance
                               ? "bg-[#6C63FF] border-[#6C63FF]"
-                              : "bg-white border-gray-300 group-hover:border-[#6C63FF]"
+                              : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 group-hover:border-[#6C63FF]"
                           }`}
                         >
                           {newMember.permissions.finance && (
                             <Check size={12} className="text-white" />
                           )}
                         </div>
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
                           Financeiro
                         </span>
                       </div>
@@ -495,14 +505,16 @@ const AdminTeam = () => {
                           className={`w-5 h-5 rounded border flex items-center justify-center transition ${
                             newMember.permissions.support
                               ? "bg-[#6C63FF] border-[#6C63FF]"
-                              : "bg-white border-gray-300 group-hover:border-[#6C63FF]"
+                              : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 group-hover:border-[#6C63FF]"
                           }`}
                         >
                           {newMember.permissions.support && (
                             <Check size={12} className="text-white" />
                           )}
                         </div>
-                        <span className="text-sm text-gray-700">Suporte</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          Suporte
+                        </span>
                       </div>
                       <div
                         className="flex items-center gap-3 cursor-pointer group select-none"
@@ -512,14 +524,16 @@ const AdminTeam = () => {
                           className={`w-5 h-5 rounded border flex items-center justify-center transition ${
                             newMember.permissions.tech
                               ? "bg-[#6C63FF] border-[#6C63FF]"
-                              : "bg-white border-gray-300 group-hover:border-[#6C63FF]"
+                              : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 group-hover:border-[#6C63FF]"
                           }`}
                         >
                           {newMember.permissions.tech && (
                             <Check size={12} className="text-white" />
                           )}
                         </div>
-                        <span className="text-sm text-gray-700">Técnico</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          Técnico
+                        </span>
                       </div>
                       <div
                         className="flex items-center gap-3 cursor-pointer group select-none"
@@ -529,43 +543,48 @@ const AdminTeam = () => {
                           className={`w-5 h-5 rounded border flex items-center justify-center transition ${
                             newMember.permissions.sales
                               ? "bg-[#6C63FF] border-[#6C63FF]"
-                              : "bg-white border-gray-300 group-hover:border-[#6C63FF]"
+                              : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 group-hover:border-[#6C63FF]"
                           }`}
                         >
                           {newMember.permissions.sales && (
                             <Check size={12} className="text-white" />
                           )}
                         </div>
-                        <span className="text-sm text-gray-700">Comercial</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          Comercial
+                        </span>
                       </div>
                     </div>
                   </div>
                 </>
               ) : (
                 <div className="text-center py-4">
-                  <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                    <LinkIcon size={32} className="text-green-600" />
+                  <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
+                    <LinkIcon
+                      size={32}
+                      className="text-green-600 dark:text-green-400"
+                    />
                   </div>
-                  <h4 className="text-lg font-bold text-gray-900 mb-2">
+                  <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
                     Membro Adicionado!
                   </h4>
-                  <p className="text-sm text-gray-500 mb-6">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                     Copie o link abaixo e envie para{" "}
                     <strong>{newMember.name}</strong> para que ele possa acessar
                     a plataforma.
                   </p>
-                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
                     <input
                       readOnly
                       value={inviteLink}
-                      className="flex-1 bg-transparent text-sm text-gray-600 outline-none"
+                      className="flex-1 bg-transparent text-sm text-gray-600 dark:text-gray-300 outline-none"
                     />
                     <button
                       onClick={copyToClipboard}
                       className={`p-2 rounded-md transition ${
                         isCopied
-                          ? "bg-green-100 text-green-700"
-                          : "hover:bg-gray-200 text-gray-500"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          : "hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400"
                       }`}
                       title="Copiar Link"
                     >
@@ -573,7 +592,7 @@ const AdminTeam = () => {
                     </button>
                   </div>
                   {isCopied && (
-                    <p className="text-xs text-green-600 mt-2 font-medium">
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-2 font-medium">
                       Link copiado!
                     </p>
                   )}
@@ -581,12 +600,12 @@ const AdminTeam = () => {
               )}
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
               {!inviteLink ? (
                 <>
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition"
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg font-medium transition"
                   >
                     Cancelar
                   </button>

@@ -235,7 +235,7 @@ const AdminIntegrations = () => {
     );
   if (error)
     return (
-      <div className="flex justify-center items-center h-96 text-red-600">
+      <div className="flex justify-center items-center h-96 text-red-600 dark:text-red-400">
         {error}
       </div>
     );
@@ -244,29 +244,35 @@ const AdminIntegrations = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Integrações & API</h1>
-        <p className="text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Integrações & API
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
           Gerencie as chaves de acesso e monitore o status dos gateways.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* WhatsApp API Status */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-green-50 text-green-600 rounded-xl border border-green-100">
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl border border-green-100 dark:border-green-900/30">
               <Activity size={24} />
             </div>
             <div>
-              <h3 className="font-bold text-gray-900">API WhatsApp</h3>
-              <p className="text-xs text-gray-500">Gateway principal</p>
+              <h3 className="font-bold text-gray-900 dark:text-white">
+                API WhatsApp
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Gateway principal
+              </p>
             </div>
           </div>
           <div
             className={`flex items-center gap-2 text-sm p-3 rounded-lg border mb-6 ${
               config.whatsappStatus === "operational"
-                ? "bg-green-50 border-green-100 text-green-700"
-                : "bg-red-50 border-red-100 text-red-700"
+                ? "bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-900/30 text-green-700 dark:text-green-300"
+                : "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-300"
             }`}
           >
             {config.whatsappStatus === "operational" ? (
@@ -281,31 +287,37 @@ const AdminIntegrations = () => {
             </span>
           </div>
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between border-b border-gray-50 pb-2">
-              <span className="text-gray-500">Uptime</span>
-              <span className="font-mono font-medium">{config.uptime}%</span>
+            <div className="flex justify-between border-b border-gray-50 dark:border-gray-700 pb-2">
+              <span className="text-gray-500 dark:text-gray-400">Uptime</span>
+              <span className="font-mono font-medium dark:text-white">
+                {config.uptime}%
+              </span>
             </div>
             <div className="flex justify-between pt-1">
-              <span className="text-gray-500">Latência</span>
-              <span className="font-mono font-medium">{config.latency}ms</span>
+              <span className="text-gray-500 dark:text-gray-400">Latência</span>
+              <span className="font-mono font-medium dark:text-white">
+                {config.latency}ms
+              </span>
             </div>
           </div>
         </div>
 
         {/* Webhooks Status */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
+            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
               <Globe size={24} />
             </div>
             <div>
-              <h3 className="font-bold text-gray-900">Webhooks Globais</h3>
-              <p className="text-xs text-gray-500">
+              <h3 className="font-bold text-gray-900 dark:text-white">
+                Webhooks Globais
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Eventos de entrada e saída
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-yellow-700 bg-yellow-50 p-3 rounded-lg border border-yellow-100 mb-6">
+          <div className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-100 dark:border-yellow-900/30 mb-6">
             <AlertTriangle size={18} />{" "}
             <span className="font-medium">
               Fila: {config.webhookQueue} eventos
@@ -314,7 +326,7 @@ const AdminIntegrations = () => {
           <div className="mt-auto">
             <button
               onClick={() => setIsLogModalOpen(true)}
-              className="w-full py-2.5 border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 text-sm font-medium transition flex items-center justify-center gap-2"
+              className="w-full py-2.5 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-sm font-medium transition flex items-center justify-center gap-2"
             >
               <ScrollText size={16} /> Ver Logs de Webhook
             </button>
@@ -323,24 +335,25 @@ const AdminIntegrations = () => {
       </div>
 
       {/* Chaves de API */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
-          <Key size={20} className="text-gray-400" /> Chaves de API Globais
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+        <h3 className="font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <Key size={20} className="text-gray-400 dark:text-gray-500" /> Chaves
+          de API Globais
         </h3>
         <div className="space-y-6">
           {/* Chave Admin */}
-          <div className="flex flex-col md:flex-row justify-between p-4 border border-gray-200 rounded-xl bg-gray-50/50 gap-4">
+          <div className="flex flex-col md:flex-row justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 gap-4">
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm text-gray-900 mb-1">
+              <p className="font-bold text-sm text-gray-900 dark:text-white mb-1">
                 Chave Mestra (Admin)
               </p>
               <div className="flex items-center gap-2">
-                <code className="text-xs text-gray-500 font-mono bg-white px-2 py-1 rounded border truncate w-full md:w-auto">
+                <code className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-white dark:bg-gray-800 px-2 py-1 rounded border dark:border-gray-700 truncate w-full md:w-auto">
                   {config.adminKey}
                 </code>
                 <button
                   onClick={() => handleCopy(config.adminKey, "admin")}
-                  className="p-1 text-gray-400 hover:text-indigo-600"
+                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400"
                 >
                   {copiedKey === "admin" ? (
                     <Check size={14} className="text-green-500" />
@@ -353,7 +366,7 @@ const AdminIntegrations = () => {
             <button
               onClick={() => handleRegenerateKey("admin")}
               disabled={isRegenerating === "admin"}
-              className="text-gray-400 hover:text-indigo-600 p-2 rounded-full hover:bg-indigo-50"
+              className="text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 p-2 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
             >
               <RefreshCw
                 size={20}
@@ -362,18 +375,18 @@ const AdminIntegrations = () => {
             </button>
           </div>
           {/* Chave Pública */}
-          <div className="flex flex-col md:flex-row justify-between p-4 border border-gray-200 rounded-xl bg-gray-50/50 gap-4">
+          <div className="flex flex-col md:flex-row justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 gap-4">
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm text-gray-900 mb-1">
+              <p className="font-bold text-sm text-gray-900 dark:text-white mb-1">
                 Chave Pública (Frontend)
               </p>
               <div className="flex items-center gap-2">
-                <code className="text-xs text-gray-500 font-mono bg-white px-2 py-1 rounded border truncate w-full md:w-auto">
+                <code className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-white dark:bg-gray-800 px-2 py-1 rounded border dark:border-gray-700 truncate w-full md:w-auto">
                   {config.publicKey}
                 </code>
                 <button
                   onClick={() => handleCopy(config.publicKey, "public")}
-                  className="p-1 text-gray-400 hover:text-indigo-600"
+                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400"
                 >
                   {copiedKey === "public" ? (
                     <Check size={14} className="text-green-500" />
@@ -386,7 +399,7 @@ const AdminIntegrations = () => {
             <button
               onClick={() => handleRegenerateKey("public")}
               disabled={isRegenerating === "public"}
-              className="text-gray-400 hover:text-indigo-600 p-2 rounded-full hover:bg-indigo-50"
+              className="text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 p-2 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
             >
               <RefreshCw
                 size={20}
@@ -400,16 +413,22 @@ const AdminIntegrations = () => {
       {/* Modal de Logs Real */}
       {isLogModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
               <div className="flex items-center gap-2">
-                <Terminal size={20} className="text-gray-500" />
-                <h3 className="font-bold text-gray-800">
+                <Terminal
+                  size={20}
+                  className="text-gray-500 dark:text-gray-400"
+                />
+                <h3 className="font-bold text-gray-800 dark:text-white">
                   Logs de Webhook em Tempo Real
                 </h3>
               </div>
               <button onClick={() => setIsLogModalOpen(false)}>
-                <X size={20} className="text-gray-400 hover:text-gray-600" />
+                <X
+                  size={20}
+                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                />
               </button>
             </div>
 
@@ -470,14 +489,14 @@ const AdminIntegrations = () => {
               )}
             </div>
 
-            <div className="p-4 border-t border-gray-200 bg-white flex justify-between items-center">
-              <p className="text-xs text-gray-500 flex items-center gap-2">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-between items-center">
+              <p className="text-xs text-gray-500 flex dark:text-gray-400 items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 Conectado ao stream de eventos
               </p>
               <button
                 onClick={handleTriggerTestEvent}
-                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition flex items-center gap-2"
+                className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-2"
               >
                 <Play size={14} /> Disparar Evento Teste
               </button>
