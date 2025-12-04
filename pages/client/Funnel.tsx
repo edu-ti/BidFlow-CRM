@@ -171,7 +171,9 @@ const Funnel = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Funil de Vendas</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Funil de Vendas
+        </h1>
         <button
           onClick={() => setIsModalOpen(true)}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700"
@@ -196,7 +198,7 @@ const Funnel = () => {
             return (
               <div
                 key={stage.id}
-                className="min-w-[300px] flex flex-col bg-gray-100 rounded-xl p-3"
+                className="min-w-[300px] flex flex-col bg-gray-100 dark:bg-gray-800/50 rounded-xl p-3 border border-transparent dark:border-gray-700"
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, stage.id)}
               >
@@ -205,10 +207,10 @@ const Funnel = () => {
                     <div
                       className={`w-3 h-3 rounded-full ${stage.color}`}
                     ></div>
-                    <h3 className="font-semibold text-gray-700">
+                    <h3 className="font-semibold text-gray-700 dark:text-gray-200">
                       {stage.name}
                     </h3>
-                    <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                    <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full text-xs font-bold">
                       {stageDeals.length}
                     </span>
                   </div>
@@ -219,10 +221,10 @@ const Funnel = () => {
                 </div>
 
                 <div className="mb-3 px-1">
-                  <p className="text-xs font-medium text-gray-500 uppercase">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Total Estimado
                   </p>
-                  <p className="text-sm font-bold text-gray-800">
+                  <p className="text-sm font-bold text-gray-800 dark:text-white">
                     R$ {totalValue.toLocaleString("pt-BR")}
                   </p>
                 </div>
@@ -233,7 +235,7 @@ const Funnel = () => {
                       key={deal.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, deal.id)}
-                      className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-grab active:cursor-grabbing hover:shadow-md transition group relative"
+                      className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-grab active:cursor-grabbing hover:shadow-md transition group relative"
                     >
                       <button
                         onClick={() => handleDeleteDeal(deal.id)}
@@ -242,18 +244,21 @@ const Funnel = () => {
                         <Trash2 size={14} />
                       </button>
                       <div className="flex justify-between items-start mb-2">
-                        <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase rounded">
+                        <span className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold uppercase rounded">
                           Negócio
                         </span>
-                        <GripVertical size={14} className="text-gray-300" />
+                        <GripVertical
+                          size={14}
+                          className="text-gray-300 dark:text-gray-600"
+                        />
                       </div>
-                      <h4 className="font-semibold text-gray-900 mb-1">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
                         {deal.title}
                       </h4>
-                      <p className="text-sm text-gray-500 mb-3">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                         {deal.contactName}
                       </p>
-                      <div className="flex items-center gap-1 text-gray-700 font-medium text-sm">
+                      <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium text-sm">
                         <DollarSign size={14} />
                         {deal.value.toLocaleString("pt-BR")}
                       </div>
@@ -269,11 +274,13 @@ const Funnel = () => {
       {/* New Deal Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6">
-            <h3 className="font-bold text-lg mb-4">Novo Negócio</h3>
+          <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-xl shadow-2xl p-6">
+            <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">
+              Novo Negócio
+            </h3>
             <div className="space-y-3">
               <input
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400"
                 placeholder="Título (ex: Contrato Anual)"
                 value={newDeal.title}
                 onChange={(e) =>
@@ -281,7 +288,7 @@ const Funnel = () => {
                 }
               />
               <input
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400"
                 placeholder="Valor (apenas números)"
                 type="number"
                 value={newDeal.value}
@@ -290,7 +297,7 @@ const Funnel = () => {
                 }
               />
               <input
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400"
                 placeholder="Nome do Cliente"
                 value={newDeal.contactName}
                 onChange={(e) =>
@@ -301,7 +308,7 @@ const Funnel = () => {
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-gray-600"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 Cancelar
               </button>

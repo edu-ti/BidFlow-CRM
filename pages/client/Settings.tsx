@@ -124,17 +124,19 @@ const Settings = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Configurações</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        Configurações
+      </h1>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row overflow-hidden min-h-[600px]">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col md:flex-row overflow-hidden min-h-[600px]">
         {/* Sidebar Tabs */}
-        <div className="w-full md:w-64 bg-gray-50 border-r border-gray-200 p-4 space-y-2">
+        <div className="w-full md:w-64 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 p-4 space-y-2">
           <button
             onClick={() => setActiveTab("profile")}
             className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition ${
               activeTab === "profile"
-                ? "bg-white text-indigo-600 shadow-sm"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
             }`}
           >
             <User size={18} /> Perfil
@@ -143,8 +145,8 @@ const Settings = () => {
             onClick={() => setActiveTab("notifications")}
             className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition ${
               activeTab === "notifications"
-                ? "bg-white text-indigo-600 shadow-sm"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
             }`}
           >
             <Bell size={18} /> Notificações
@@ -153,8 +155,8 @@ const Settings = () => {
             onClick={() => setActiveTab("whatsapp")}
             className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition ${
               activeTab === "whatsapp"
-                ? "bg-white text-indigo-600 shadow-sm"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
             }`}
           >
             <Smartphone size={18} /> Conexão WhatsApp
@@ -163,8 +165,8 @@ const Settings = () => {
             onClick={() => setActiveTab("security")}
             className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition ${
               activeTab === "security"
-                ? "bg-white text-indigo-600 shadow-sm"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
             }`}
           >
             <Shield size={18} /> Segurança
@@ -176,10 +178,10 @@ const Settings = () => {
           {activeTab === "profile" && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <div>
-                <h2 className="text-xl font-bold text-gray-800">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                   Perfil do Usuário
                 </h2>
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
                   Gerencie suas informações pessoais.
                 </p>
               </div>
@@ -188,7 +190,7 @@ const Settings = () => {
                 <img
                   src={profile.avatar}
                   alt="Avatar"
-                  className="w-20 h-20 rounded-full border-4 border-white shadow-md object-cover"
+                  className="w-20 h-20 rounded-full border-4 border-white dark:border-gray-700 shadow-md object-cover"
                 />
                 <input
                   type="file"
@@ -199,7 +201,7 @@ const Settings = () => {
                 />
                 <button
                   onClick={handlePhotoUpload}
-                  className="h-10 px-4 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition shadow-sm"
+                  className="h-10 px-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition shadow-sm"
                 >
                   Alterar Foto
                 </button>
@@ -207,7 +209,7 @@ const Settings = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Nome Completo
                   </label>
                   <input
@@ -216,11 +218,11 @@ const Settings = () => {
                     onChange={(e) =>
                       setProfile({ ...profile, name: e.target.value })
                     }
-                    className="w-full px-4 py-3 bg-[#333333] border border-transparent text-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none placeholder-gray-400"
+                    className="w-full px-4 py-3 bg-blue-500 border border-transparent text-gray rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none placeholder-gray-400 dark:bg-gray-700"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Cargo
                   </label>
                   <input
@@ -229,11 +231,11 @@ const Settings = () => {
                     onChange={(e) =>
                       setProfile({ ...profile, role: e.target.value })
                     }
-                    className="w-full px-4 py-3 bg-[#333333] border border-transparent text-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none placeholder-gray-400"
+                    className="w-full px-4 py-3 bg-blue-500 border border-transparent text-gray rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none placeholder-gray-400 dark:bg-gray-700"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Email
                   </label>
                   <input
@@ -242,12 +244,12 @@ const Settings = () => {
                     onChange={(e) =>
                       setProfile({ ...profile, email: e.target.value })
                     }
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-gray-700"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-gray-700 dark:text-white"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-gray-100 flex justify-end">
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end">
                 <button
                   id="save-profile-btn"
                   onClick={handleSaveProfile}
@@ -262,39 +264,42 @@ const Settings = () => {
           {activeTab === "whatsapp" && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <div>
-                <h2 className="text-xl font-bold text-gray-800">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                   Conexão WhatsApp
                 </h2>
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
                   Gerencie a conexão da sua instância.
                 </p>
               </div>
 
-              <div className="bg-[#f0fdf4] border border-green-100 rounded-xl p-6 flex flex-col md:flex-row items-center gap-6">
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                  <QrCode size={120} className="text-gray-800" />
+              <div className="bg-[#f0fdf4] dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 rounded-xl p-6 flex flex-col md:flex-row items-center gap-6">
+                <div className="bg-white dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-600">
+                  <QrCode
+                    size={120}
+                    className="text-gray-800 dark:text-white"
+                  />
                 </div>
                 <div className="text-center md:text-left flex-1">
-                  <h3 className="text-lg font-bold text-green-800 mb-2">
+                  <h3 className="text-lg font-bold text-green-800 dark:text-green-400 mb-2">
                     Conectado com Sucesso
                   </h3>
                   <div className="space-y-1 text-sm">
-                    <p className="text-green-700">
+                    <p className="text-green-700 dark:text-green-300">
                       Instância:{" "}
-                      <span className="font-semibold text-green-900">
+                      <span className="font-semibold text-green-900 dark:text-green-100">
                         Vendas Principal
                       </span>
                     </p>
-                    <p className="text-green-700">
+                    <p className="text-green-700 dark:text-green-300">
                       Número:{" "}
-                      <span className="font-semibold text-green-900">
+                      <span className="font-semibold text-green-900 dark:text-green-100">
                         +55 11 99999-9999
                       </span>
                     </p>
-                    <p className="text-green-700 flex items-center justify-center md:justify-start gap-1">
+                    <p className="text-green-700 dark:text-green-300 flex items-center justify-center md:justify-start gap-1">
                       Status:{" "}
                       <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>{" "}
-                      <span className="font-semibold text-green-900">
+                      <span className="font-semibold text-green-900 dark:text-green-100">
                         Online
                       </span>
                     </p>
@@ -302,19 +307,19 @@ const Settings = () => {
 
                   <button
                     onClick={handleDisconnect}
-                    className="mt-4 text-red-600 text-sm font-medium hover:text-red-700 flex items-center justify-center md:justify-start gap-1 transition-colors"
+                    className="mt-4 text-red-600 dark:text-red-400 text-sm font-medium hover:text-red-700 dark:hover:text-red-300 flex items-center justify-center md:justify-start gap-1 transition-colors"
                   >
                     <LogOut size={14} /> Desconectar Sessão
                   </button>
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 pt-6">
-                <h3 className="font-semibold text-gray-800 mb-4">
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-6">
+                <h3 className="font-semibold text-gray-800 dark:text-white mb-4">
                   Configurações da Instância
                 </h3>
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer bg-white">
+                  <label className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer bg-white dark:bg-gray-700">
                     <div className="relative flex items-center">
                       <input
                         type="checkbox"
@@ -322,11 +327,11 @@ const Settings = () => {
                         defaultChecked
                       />
                     </div>
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-gray-700 dark:text-gray-200">
                       Ignorar chamadas de voz
                     </span>
                   </label>
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer bg-white">
+                  <label className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer bg-white dark:bg-gray-700">
                     <div className="relative flex items-center">
                       <input
                         type="checkbox"
@@ -334,7 +339,7 @@ const Settings = () => {
                         defaultChecked
                       />
                     </div>
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-gray-700 dark:text-gray-200">
                       Ler mensagens automaticamente
                     </span>
                   </label>
@@ -346,19 +351,21 @@ const Settings = () => {
           {activeTab === "notifications" && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <div>
-                <h2 className="text-xl font-bold text-gray-800">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                   Preferências de Notificação
                 </h2>
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-500 text-sm dark:text-gray-100/70">
                   Escolha como e quando você quer ser notificado.
                 </p>
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white">
+                <div className="flex items-center justify-between p-4 border border-gray-200 dark:bg-blue-700/20 dark:border-gray-700 dark:text-white rounded-lg bg-white">
                   <div>
-                    <h4 className="font-medium text-gray-900">Novos Leads</h4>
-                    <p className="text-sm text-gray-500">
+                    <h4 className="font-medium text-gray-900 dark:text-white">
+                      Novos Leads
+                    </h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-100/50">
                       Receber alerta quando um novo lead entrar no funil.
                     </p>
                   </div>
@@ -372,12 +379,12 @@ const Settings = () => {
                   </label>
                 </div>
 
-                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white">
+                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white dark:bg-blue-700/20 dark:border-gray-700 dark:text-white">
                   <div>
-                    <h4 className="font-medium text-gray-900">
+                    <h4 className="font-medium text-gray-900  dark:text-white">
                       Mensagens Recebidas
                     </h4>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-100/50">
                       Notificar a cada nova mensagem no chat.
                     </p>
                   </div>
@@ -391,12 +398,12 @@ const Settings = () => {
                   </label>
                 </div>
 
-                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white">
+                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white dark:bg-blue-700/20 dark:border-gray-700 dark:text-white">
                   <div>
-                    <h4 className="font-medium text-gray-900">
+                    <h4 className="font-medium text-gray-900 dark:text-white">
                       Relatórios Semanais
                     </h4>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-100/50">
                       Receber resumo de performance por email.
                     </p>
                   </div>
@@ -412,14 +419,16 @@ const Settings = () => {
           {activeTab === "security" && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <div>
-                <h2 className="text-xl font-bold text-gray-800">Segurança</h2>
-                <p className="text-gray-500 text-sm">
+                <h2 className="text-xl font-bold text-gray-800  dark:text-white">
+                  Segurança
+                </h2>
+                <p className="text-gray-500 text-sm dark:text-gray-100/50">
                   Proteja sua conta e dados.
                 </p>
               </div>
 
               <div
-                className={`p-4 border rounded-lg flex items-center justify-between ${
+                className={`p-4 border rounded-lg flex items-center justify-between dark:bg-blue-700/20 dark:border-gray-700 dark:text-blue-200 ${
                   twoFactorEnabled
                     ? "bg-indigo-50 border-indigo-100 text-indigo-800"
                     : "bg-gray-50 border-gray-200 text-gray-700"
@@ -455,7 +464,7 @@ const Settings = () => {
               <div className="space-y-4 pt-2">
                 <button
                   onClick={handlePasswordReset}
-                  className="flex items-center justify-between w-full p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition group"
+                  className="flex items-center justify-between w-full p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition group dark:bg-blue-700/20 dark:border-gray-700 dark:text-white"
                 >
                   <div className="flex items-center gap-3">
                     <div
@@ -471,7 +480,7 @@ const Settings = () => {
                         <Lock size={20} />
                       )}
                     </div>
-                    <div className="text-left">
+                    <div className="text-left dark:text-white">
                       <h4
                         className={`font-medium ${
                           passwordResetSent
@@ -483,9 +492,9 @@ const Settings = () => {
                           ? "Email de recuperação enviado!"
                           : "Alterar Senha"}
                       </h4>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-100/50 dark:text-white">
                         {passwordResetSent
-                          ? "Verifique sua caixa de entrada"
+                          ? "Verifique sua caixa de entrada "
                           : "Atualize sua senha periodicamente"}
                       </p>
                     </div>
@@ -501,19 +510,19 @@ const Settings = () => {
                 <div>
                   <button
                     onClick={handleDeviceToggle}
-                    className={`flex items-center justify-between w-full p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition group ${
+                    className={`flex items-center justify-between w-full p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 dark:bg-blue-700/20 dark:border-gray-700 dark:text-white transition group ${
                       showDevices ? "rounded-b-none border-b-0" : ""
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center  gap-3">
                       <div className="p-2 bg-gray-100 rounded-lg text-gray-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors">
                         <Monitor size={20} />
                       </div>
-                      <div className="text-left">
-                        <h4 className="font-medium text-indigo-600">
+                      <div className="text-left ">
+                        <h4 className="font-medium dark:text-white text-indigo-600">
                           Ver Dispositivos Conectados
                         </h4>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 dark:text-gray-100/50 dark:text-white">
                           Gerencie onde sua conta está logada
                         </p>
                       </div>
@@ -527,15 +536,15 @@ const Settings = () => {
                   </button>
 
                   {showDevices && (
-                    <div className="border border-t-0 border-gray-200 rounded-b-lg bg-gray-50 p-4 space-y-3 animate-in slide-in-from-top-2">
+                    <div className="border border-t-0 dark:bg-blue-700/30 dark:border-gray-700 dark:text-white border-gray-200 rounded-b-lg bg-gray-50 p-4 space-y-3 animate-in slide-in-from-top-2">
                       <div className="flex justify-between items-center text-sm">
                         <div className="flex items-center gap-2">
                           <Monitor size={16} className="text-gray-500" />
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-gray-900 dark:text-gray-100/90">
                               Windows PC - Chrome
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-100/50">
                               São Paulo, BR • Atual (Este dispositivo)
                             </p>
                           </div>
@@ -548,10 +557,10 @@ const Settings = () => {
                         <div className="flex items-center gap-2">
                           <Smartphone size={16} className="text-gray-500" />
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-gray-900 dark:text-gray-100/90">
                               iPhone 13 - App
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-100/50">
                               Rio de Janeiro, BR • Há 2 horas
                             </p>
                           </div>

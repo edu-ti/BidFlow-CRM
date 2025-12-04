@@ -233,7 +233,7 @@ const Calendar = () => {
       days.push(
         <div
           key={`empty-${i}`}
-          className="bg-gray-50/50 min-h-[100px] border border-gray-100 hidden md:block"
+          className="bg-gray-50/50 dark:bg-gray-800/50 min-h-[100px] border border-gray-100 dark:border-gray-700 hidden md:block"
         ></div>
       );
     }
@@ -249,12 +249,14 @@ const Calendar = () => {
       days.push(
         <div
           key={day}
-          className={`min-h-[100px] bg-white border border-gray-100 p-2 relative group hover:bg-gray-50 transition`}
+          className={`min-h-[100px] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-2 relative group hover:bg-gray-50 dark:hover:bg-gray-700 transition`}
         >
           <div className="flex justify-between items-start">
             <span
               className={`text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full ${
-                isToday ? "bg-indigo-600 text-white" : "text-gray-700"
+                isToday
+                  ? "bg-indigo-600 text-white"
+                  : "text-gray-700 dark:text-gray-300"
               }`}
             >
               {day}
@@ -275,7 +277,7 @@ const Calendar = () => {
                 setEditingId(null);
                 setIsModalOpen(true);
               }}
-              className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-indigo-600 transition"
+              className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
               title="Adicionar evento neste dia"
             >
               <Plus size={16} />
@@ -292,12 +294,12 @@ const Calendar = () => {
                 }}
                 className={`px-2 py-1 rounded text-xs truncate border-l-2 cursor-pointer hover:opacity-80 transition shadow-sm ${
                   event.type === "meeting"
-                    ? "bg-blue-50 border-blue-500 text-blue-700"
+                    ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300"
                     : event.type === "deadline"
-                    ? "bg-red-50 border-red-500 text-red-700"
+                    ? "bg-red-50 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300"
                     : event.type === "personal"
-                    ? "bg-green-50 border-green-500 text-green-700"
-                    : "bg-indigo-50 border-indigo-500 text-indigo-700"
+                    ? "bg-green-50 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-300"
+                    : "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-500 text-indigo-700 dark:text-indigo-300"
                 }`}
               >
                 <span className="font-bold mr-1">{event.time}</span>
@@ -316,25 +318,27 @@ const Calendar = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Agenda</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Agenda
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400">
             Visualize seus compromissos e agendamentos.
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+          <div className="flex items-center bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-1">
             <button
               onClick={handlePrevMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300"
             >
               <ChevronLeft size={20} />
             </button>
-            <span className="px-4 font-semibold text-gray-800 w-36 text-center">
+            <span className="px-4 font-semibold text-gray-800 dark:text-gray-200 w-36 text-center">
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </span>
             <button
               onClick={handleNextMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300"
             >
               <ChevronRight size={20} />
             </button>
@@ -348,13 +352,13 @@ const Calendar = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
         {/* Days Header */}
-        <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+        <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
           {weekDays.map((day) => (
             <div
               key={day}
-              className="py-3 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide"
+              className="py-3 text-center text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
             >
               {day}
             </div>
@@ -362,15 +366,17 @@ const Calendar = () => {
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 bg-gray-200 gap-px">
+        <div className="grid grid-cols-7 bg-gray-200 dark:bg-gray-700 gap-px">
           {renderCalendarDays()}
         </div>
       </div>
 
       {/* Upcoming Events List (Mobile/Summary) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm md:col-span-1">
-          <h3 className="font-bold text-gray-800 mb-4">Próximos Eventos</h3>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm md:col-span-1">
+          <h3 className="font-bold text-gray-800 dark:text-white mb-4">
+            Próximos Eventos
+          </h3>
           <div className="space-y-4">
             {events
               .filter(
@@ -382,9 +388,9 @@ const Calendar = () => {
                 <div
                   key={event.id}
                   onClick={() => openEditModal(event)}
-                  className="flex gap-3 items-start pb-4 border-b border-gray-100 last:border-0 last:pb-0 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-lg transition"
+                  className="flex gap-3 items-start pb-4 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 -mx-2 px-2 rounded-lg transition"
                 >
-                  <div className="bg-indigo-50 text-indigo-600 p-2 rounded-lg text-center min-w-[3rem]">
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 p-2 rounded-lg text-center min-w-[3rem]">
                     <span className="block text-xs font-bold uppercase">
                       {monthNames[event.date.getMonth()].substring(0, 3)}
                     </span>
@@ -393,10 +399,10 @@ const Calendar = () => {
                     </span>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-800 text-sm">
+                    <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                       {event.title}
                     </h4>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
                       <Clock size={12} /> {event.time}
                     </div>
                   </div>
@@ -405,7 +411,9 @@ const Calendar = () => {
             {events.filter(
               (e) => e.date >= new Date(new Date().setHours(0, 0, 0, 0))
             ).length === 0 && (
-              <p className="text-gray-500 text-sm">Nenhum evento próximo.</p>
+              <p className="text-gray-500 dark:text-gray-400  text-sm">
+                Nenhum evento próximo.
+              </p>
             )}
           </div>
         </div>
@@ -414,14 +422,14 @@ const Calendar = () => {
       {/* New/Edit Event Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h3 className="font-bold text-gray-800 dark:text-white">
                 {editingId ? "Editar Evento" : "Novo Evento"}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <X size={20} />
               </button>
@@ -429,7 +437,7 @@ const Calendar = () => {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Título do Evento
                 </label>
                 <div className="relative">
@@ -439,7 +447,7 @@ const Calendar = () => {
                   />
                   <input
                     type="text"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 bg-white"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                     placeholder="Ex: Reunião Mensal"
                     value={newEvent.title}
                     onChange={(e) =>
@@ -452,7 +460,7 @@ const Calendar = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Data
                   </label>
                   <div className="relative">
@@ -462,7 +470,7 @@ const Calendar = () => {
                     />
                     <input
                       type="date"
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 bg-white"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                       value={newEvent.date}
                       onChange={(e) =>
                         setNewEvent({ ...newEvent, date: e.target.value })
@@ -471,7 +479,7 @@ const Calendar = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Horário
                   </label>
                   <div className="relative">
@@ -481,7 +489,7 @@ const Calendar = () => {
                     />
                     <input
                       type="time"
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 bg-white"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                       value={newEvent.time}
                       onChange={(e) =>
                         setNewEvent({ ...newEvent, time: e.target.value })
@@ -492,11 +500,11 @@ const Calendar = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Tipo de Evento
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                   value={newEvent.type}
                   onChange={(e) =>
                     setNewEvent({ ...newEvent, type: e.target.value as any })
@@ -510,11 +518,11 @@ const Calendar = () => {
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
               {editingId && (
                 <button
                   onClick={handleDeleteEvent}
-                  className="mr-auto px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium transition flex items-center gap-2"
+                  className="mr-auto px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-medium transition flex items-center gap-2"
                 >
                   <Trash2 size={16} />{" "}
                   <span className="hidden sm:inline">Excluir</span>
@@ -522,7 +530,7 @@ const Calendar = () => {
               )}
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg font-medium transition"
               >
                 Cancelar
               </button>

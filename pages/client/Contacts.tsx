@@ -220,10 +220,12 @@ const Contacts = () => {
   );
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm relative">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h2 className="text-xl font-bold text-gray-900">Contatos</h2>
+      <div className="pp-6 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          Contatos
+        </h2>
         <div className="flex gap-3">
           <div className="relative">
             <Search
@@ -235,15 +237,15 @@ const Contacts = () => {
               placeholder="Buscar contatos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition ${
               showFilters
-                ? "bg-gray-100 border-gray-400 text-gray-900"
-                : "border-gray-300 hover:bg-gray-50 text-gray-700"
+                ? "bg-gray-100 dark:bg-gray-700 border-gray-400 dark:border-gray-500 text-gray-900 dark:text-white"
+                : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
             }`}
           >
             <Filter size={18} /> Filtros
@@ -266,7 +268,7 @@ const Contacts = () => {
         ) : (
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+              <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
                 <th className="px-6 py-4">Nome</th>
                 <th className="px-6 py-4">Telefone</th>
                 <th className="px-6 py-4">Email</th>
@@ -274,24 +276,27 @@ const Contacts = () => {
                 <th className="px-6 py-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {filteredContacts.length > 0 ? (
                 filteredContacts.map((contact) => (
-                  <tr key={contact.id} className="hover:bg-gray-50 group">
+                  <tr
+                    key={contact.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 group"
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
                           {contact.name.substring(0, 2).toUpperCase()}
                         </div>
-                        <span className="font-medium text-gray-900">
+                        <span className="font-medium text-gray-900 dark:text-white">
                           {contact.name}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">
                       {contact.phone}
                     </td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">
                       {contact.email}
                     </td>
                     <td className="px-6 py-4">
@@ -299,7 +304,7 @@ const Contacts = () => {
                         {contact.tags.map((tag, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md border border-gray-200"
+                            className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-md border border-gray-200 dark:border-gray-600"
                           >
                             {tag}
                           </span>
@@ -313,7 +318,7 @@ const Contacts = () => {
                             openMenuId === contact.id ? null : contact.id
                           )
                         }
-                        className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition"
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                       >
                         <MoreHorizontal size={18} />
                       </button>
@@ -325,17 +330,17 @@ const Contacts = () => {
                             className="fixed inset-0 z-10"
                             onClick={() => setOpenMenuId(null)}
                           ></div>
-                          <div className="absolute right-6 top-10 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-20 animate-in fade-in zoom-in-95 duration-100">
+                          <div className="absolute right-6 top-10 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 z-20 animate-in fade-in zoom-in-95 duration-100">
                             <div className="py-1">
                               <button
                                 onClick={() => handleEditContact(contact)}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                               >
                                 <Edit2 size={14} /> Editar Contato
                               </button>
                               <button
                                 onClick={() => handleDeleteContact(contact.id)}
-                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                               >
                                 <Trash2 size={14} /> Excluir
                               </button>
@@ -348,7 +353,10 @@ const Contacts = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="text-center py-10 text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="text-center py-10 text-gray-500 dark:text-gray-400"
+                  >
                     Nenhum contato encontrado.
                   </td>
                 </tr>
@@ -361,14 +369,14 @@ const Contacts = () => {
       {/* New/Edit Contact Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h3 className="font-bold text-gray-800 dark:text-white">
                 {editingId ? "Editar Contato" : "Novo Contato"}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <X size={20} />
               </button>
@@ -376,7 +384,7 @@ const Contacts = () => {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nome Completo
                 </label>
                 <div className="relative">
@@ -386,7 +394,7 @@ const Contacts = () => {
                   />
                   <input
                     type="text"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Ex: Maria Silva"
                     value={newContact.name}
                     onChange={(e) =>
@@ -397,7 +405,7 @@ const Contacts = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Telefone (WhatsApp)
                 </label>
                 <div className="relative">
@@ -407,7 +415,7 @@ const Contacts = () => {
                   />
                   <input
                     type="text"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="+55 11 99999-9999"
                     value={newContact.phone}
                     onChange={(e) =>
@@ -418,7 +426,7 @@ const Contacts = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Email
                 </label>
                 <div className="relative">
@@ -428,7 +436,7 @@ const Contacts = () => {
                   />
                   <input
                     type="email"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="maria@exemplo.com"
                     value={newContact.email}
                     onChange={(e) =>
@@ -439,12 +447,12 @@ const Contacts = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Etiquetas (separadas por vírgula)
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Cliente, VIP, SP"
                   value={newContact.tags?.join(", ") || ""}
                   onChange={(e) =>
@@ -460,10 +468,10 @@ const Contacts = () => {
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg font-medium transition"
               >
                 Cancelar
               </button>

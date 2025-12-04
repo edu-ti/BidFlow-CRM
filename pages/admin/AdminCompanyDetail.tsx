@@ -1249,8 +1249,10 @@ const AdminCompanyDetail = () => {
     <div className="space-y-4 animate-in fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="font-bold text-gray-800">Usuários da Empresa</h3>
-          <p className="text-gray-500 text-sm">
+          <h3 className="font-bold text-gray-800 dark:text-white">
+            Usuários da Empresa
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             Gerencie quem tem acesso ao painel desta empresa.
           </p>
         </div>
@@ -1261,39 +1263,46 @@ const AdminCompanyDetail = () => {
           <Plus size={16} /> Novo Usuário
         </button>
       </div>
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-colors">
         <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
             <tr>
-              <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs">
+              <th className="px-6 py-3 font-bold text-gray-500 dark:text-gray-400 uppercase text-xs">
                 Nome
               </th>
-              <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs">
+              <th className="px-6 py-3 font-bold text-gray-500 dark:text-gray-400 uppercase text-xs">
                 Email
               </th>
-              <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs">
+              <th className="px-6 py-3 font-bold text-gray-500 dark:text-gray-400 uppercase text-xs">
                 Função
               </th>
-              <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs">
+              <th className="px-6 py-3 font-bold text-gray-500 dark:text-gray-400 uppercase text-xs">
                 Status
               </th>
-              <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs text-right">
+              <th className="px-6 py-3 font-bold text-gray-500 dark:text-gray-400 uppercase text-xs text-right">
                 Ações
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
             {users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50">
+              <tr
+                key={u.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
                 <td className="px-6 py-4 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
                     {u.name.substring(0, 2).toUpperCase()}
                   </div>
-                  <span className="font-medium text-gray-900">{u.name}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {u.name}
+                  </span>
                 </td>
-                <td className="px-6 py-4 text-gray-600">{u.email}</td>
+                <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                  {u.email}
+                </td>
                 <td className="px-6 py-4">
-                  <span className="px-2 py-1 bg-gray-100 border border-gray-200 rounded text-xs font-bold text-gray-600 uppercase">
+                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">
                     {u.role === "admin"
                       ? "Administrador"
                       : u.role === "manager"
@@ -1305,8 +1314,8 @@ const AdminCompanyDetail = () => {
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-bold ${
                       u.status === "active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                     }`}
                   >
                     {u.status === "active" ? "Ativo" : "Inativo"}
@@ -1315,13 +1324,13 @@ const AdminCompanyDetail = () => {
                 <td className="px-6 py-4 text-right flex justify-end gap-3">
                   <button
                     onClick={() => openUserModal(u)}
-                    className="text-gray-400 hover:text-indigo-600 transition"
+                    className="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button
                     onClick={() => handleDeleteUser(u.id, u.name)}
-                    className="text-gray-400 hover:text-red-600 transition"
+                    className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -1331,30 +1340,33 @@ const AdminCompanyDetail = () => {
           </tbody>
         </table>
         {users.length === 0 && (
-          <p className="p-8 text-center text-gray-500">
+          <p className="p-8 text-center text-gray-500 dark:text-gray-400">
             Nenhum usuário cadastrado.
           </p>
         )}
       </div>
       {isUserModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 border border-gray-100 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h3 className="font-bold text-gray-800 dark:text-white">
                 {editingUserId ? "Editar Usuário" : "Novo Usuário"}
               </h3>
               <button onClick={() => setIsUserModalOpen(false)}>
-                <X size={20} className="text-gray-400" />
+                <X
+                  size={20}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                   Nome Completo
                 </label>
                 <input
                   type="text"
-                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                  className="w-full border dark:border-gray-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   value={userForm.name}
                   onChange={(e) =>
                     setUserForm({ ...userForm, name: e.target.value })
@@ -1362,12 +1374,12 @@ const AdminCompanyDetail = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                   Email de Acesso
                 </label>
                 <input
                   type="email"
-                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                  className="w-full border dark:border-gray-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   value={userForm.email}
                   onChange={(e) =>
                     setUserForm({ ...userForm, email: e.target.value })
@@ -1376,11 +1388,11 @@ const AdminCompanyDetail = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                     Função
                   </label>
                   <select
-                    className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+                    className="w-full border dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={userForm.role}
                     onChange={(e) =>
                       setUserForm({ ...userForm, role: e.target.value as any })
@@ -1392,11 +1404,11 @@ const AdminCompanyDetail = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                     Status
                   </label>
                   <select
-                    className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+                    className="w-full border dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={userForm.status}
                     onChange={(e) =>
                       setUserForm({
@@ -1411,10 +1423,10 @@ const AdminCompanyDetail = () => {
                 </div>
               </div>
             </div>
-            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => setIsUserModalOpen(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm font-medium"
               >
                 Cancelar
               </button>
@@ -1435,8 +1447,10 @@ const AdminCompanyDetail = () => {
     <div className="space-y-6 animate-in fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="font-bold text-gray-800 text-lg">Contratos</h3>
-          <p className="text-gray-500 text-sm">
+          <h3 className="font-bold text-gray-800 dark:text-white text-lg">
+            Contratos
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             Documentos legais e acordos firmados com este cliente.
           </p>
         </div>
@@ -1448,33 +1462,36 @@ const AdminCompanyDetail = () => {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-colors">
         <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
             <tr>
-              <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs">
+              <th className="px-6 py-3 font-bold text-gray-500 dark:text-gray-400 uppercase text-xs">
                 Título
               </th>
-              <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs">
+              <th className="px-6 py-3 font-bold text-gray-500 dark:text-gray-400 uppercase text-xs">
                 Status
               </th>
-              <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs">
+              <th className="px-6 py-3 font-bold text-gray-500 dark:text-gray-400 uppercase text-xs">
                 Data Assinatura
               </th>
-              <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs text-right">
+              <th className="px-6 py-3 font-bold text-gray-500 dark:text-gray-400 uppercase text-xs text-right">
                 Ações
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
             {contracts.map((contract) => (
-              <tr key={contract.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium text-gray-900 flex items-center gap-2">
+              <tr
+                key={contract.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white flex items-center gap-2">
                   <FileCheck size={18} className="text-green-500" />
                   <div>
                     <p>{contract.title}</p>
                     {contract.fileName && (
-                      <span className="text-xs text-gray-400 font-normal">
+                      <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">
                         {contract.fileName}
                       </span>
                     )}
@@ -1484,14 +1501,14 @@ const AdminCompanyDetail = () => {
                   <span
                     className={`px-2 py-1 rounded text-xs font-bold uppercase ${
                       contract.status === "active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-600"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                     }`}
                   >
                     {contract.status === "active" ? "Vigente" : "Expirado"}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-gray-600">
+                <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
                   {contract.signedAt
                     ? new Date(contract.signedAt).toLocaleDateString("pt-BR")
                     : "-"}
@@ -1499,7 +1516,7 @@ const AdminCompanyDetail = () => {
                 <td className="px-6 py-4 text-right flex justify-end gap-2">
                   <button
                     onClick={() => handleViewContract(contract.url)}
-                    className="text-gray-400 hover:text-blue-600 transition p-1.5 hover:bg-blue-50 rounded"
+                    className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
                     title="Visualizar"
                   >
                     <Eye size={18} />
@@ -1508,7 +1525,7 @@ const AdminCompanyDetail = () => {
                     onClick={() =>
                       handleDownloadContract(contract.url, contract.fileName)
                     }
-                    className="text-gray-400 hover:text-indigo-600 transition p-1.5 hover:bg-indigo-50 rounded"
+                    className="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded"
                     title="Baixar"
                   >
                     <Download size={18} />
@@ -1517,7 +1534,7 @@ const AdminCompanyDetail = () => {
                     onClick={() =>
                       handleDeleteContract(contract.id, contract.title)
                     }
-                    className="text-gray-400 hover:text-red-600 transition p-1.5 hover:bg-red-50 rounded"
+                    className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
                     title="Excluir"
                   >
                     <Trash2 size={18} />
@@ -1529,7 +1546,7 @@ const AdminCompanyDetail = () => {
               <tr>
                 <td
                   colSpan={4}
-                  className="p-12 text-center text-gray-500 bg-gray-50"
+                  className="p-12 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50"
                 >
                   <FileText className="mx-auto mb-2 text-gray-300" size={32} />
                   <p>Nenhum contrato vinculado.</p>
@@ -1543,21 +1560,26 @@ const AdminCompanyDetail = () => {
       {/* Modal Novo Contrato */}
       {isContractModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800">Novo Contrato</h3>
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 border border-gray-100 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h3 className="font-bold text-gray-800 dark:text-white">
+                Novo Contrato
+              </h3>
               <button onClick={() => setIsContractModalOpen(false)}>
-                <X size={20} className="text-gray-400 hover:text-gray-600" />
+                <X
+                  size={20}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                   Título do Documento
                 </label>
                 <input
                   type="text"
-                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                  className="w-full border dark:border-gray-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Ex: Contrato de Prestação de Serviços 2024"
                   value={newContractTitle}
                   onChange={(e) => setNewContractTitle(e.target.value)}
@@ -1569,8 +1591,8 @@ const AdminCompanyDetail = () => {
                 onClick={() => fileInputRef.current?.click()}
                 className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition group ${
                   selectedFile
-                    ? "border-green-500 bg-green-50"
-                    : "border-gray-300 hover:border-indigo-500 hover:bg-indigo-50"
+                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                    : "border-gray-300 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
                 }`}
               >
                 <input
@@ -1590,7 +1612,7 @@ const AdminCompanyDetail = () => {
                 />
                 {selectedFile ? (
                   <div>
-                    <p className="text-sm font-medium text-green-700 break-all">
+                    <p className="text-sm font-medium text-green-700 dark:text-green-400 break-all">
                       {selectedFile.name}
                     </p>
                     <p className="text-xs text-green-500 mt-1">
@@ -1599,7 +1621,7 @@ const AdminCompanyDetail = () => {
                   </div>
                 ) : (
                   <div>
-                    <p className="text-sm font-medium text-gray-700 group-hover:text-indigo-700">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-400">
                       Clique para fazer upload
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
@@ -1609,10 +1631,10 @@ const AdminCompanyDetail = () => {
                 )}
               </div>
             </div>
-            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => setIsContractModalOpen(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm font-medium"
               >
                 Cancelar
               </button>
@@ -1633,8 +1655,10 @@ const AdminCompanyDetail = () => {
   const renderWhatsAppTab = () => (
     <div className="space-y-6 animate-in fade-in">
       <div className="flex flex-col">
-        <h3 className="text-lg font-bold text-gray-900">Conexão WhatsApp</h3>
-        <p className="text-sm text-gray-500">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+          Conexão WhatsApp
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Gerencie as instâncias conectadas à API oficial ou Baileys.
         </p>
       </div>
@@ -1651,7 +1675,7 @@ const AdminCompanyDetail = () => {
         {instances.map((inst) => (
           <div
             key={inst.id}
-            className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden relative"
+            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden relative transition-colors"
           >
             {/* Borda lateral de status */}
             <div
@@ -1666,14 +1690,14 @@ const AdminCompanyDetail = () => {
                   <div
                     className={`p-2 rounded-lg ${
                       inst.status === "CONNECTED"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-red-100 text-red-600"
+                        ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                        : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
                     }`}
                   >
                     <Smartphone size={24} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 uppercase">
+                    <h3 className="font-bold text-gray-900 dark:text-white uppercase">
                       {inst.name}
                     </h3>
                     <p className="text-xs text-gray-400 font-mono">
@@ -1683,7 +1707,7 @@ const AdminCompanyDetail = () => {
                 </div>
                 <button
                   onClick={() => handleDeleteInstance(inst.id, inst.name)}
-                  className="text-gray-300 hover:text-red-500 transition"
+                  className="text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition"
                 >
                   <Trash2 size={18} />
                 </button>
@@ -1692,25 +1716,25 @@ const AdminCompanyDetail = () => {
               <div className="flex flex-col items-center justify-center py-4 space-y-3">
                 {inst.status === "CONNECTED" ? (
                   <>
-                    <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center border-4 border-green-50">
+                    <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center border-4 border-green-50 dark:border-green-900/10">
                       <CheckCircle2 size={32} className="text-green-600" />
                     </div>
-                    <p className="text-xl font-bold text-gray-800 tracking-wide">
+                    <p className="text-xl font-bold text-gray-800 dark:text-gray-100 tracking-wide">
                       {inst.phoneNumber}
                     </p>
-                    <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                    <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
                       Bateria: {inst.batteryLevel}%
                     </span>
                   </>
                 ) : (
                   <>
-                    <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center border-4 border-red-50">
+                    <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center border-4 border-red-50 dark:border-red-900/10">
                       <Power size={32} className="text-red-600" />
                     </div>
-                    <p className="text-sm text-gray-500 font-medium">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
                       Desconectado
                     </p>
-                    <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                    <span className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-full">
                       OFFLINE
                     </span>
                   </>
@@ -1721,8 +1745,8 @@ const AdminCompanyDetail = () => {
                 onClick={() => handleManageInstance(inst)}
                 className={`w-full mt-4 py-2.5 rounded-lg text-sm font-bold border transition flex items-center justify-center gap-2 ${
                   inst.status === "CONNECTED"
-                    ? "border-red-100 text-red-600 bg-red-50 hover:bg-red-100"
-                    : "border-green-100 text-green-600 bg-green-50 hover:bg-green-100"
+                    ? "border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20"
+                    : "border-green-100 dark:border-green-900/30 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/10 hover:bg-green-100 dark:hover:bg-green-900/20"
                 }`}
               >
                 <Power size={16} />
@@ -1734,7 +1758,7 @@ const AdminCompanyDetail = () => {
           </div>
         ))}
         {instances.length === 0 && (
-          <div className="col-span-full p-12 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-400">
+          <div className="col-span-full p-12 text-center bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-gray-400">
             Nenhuma instância encontrada.
           </div>
         )}
@@ -1743,30 +1767,35 @@ const AdminCompanyDetail = () => {
       {/* Modal Instância */}
       {isInstanceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800">Nova Instância</h3>
+          <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 border border-gray-100 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h3 className="font-bold text-gray-800 dark:text-white">
+                Nova Instância
+              </h3>
               <button onClick={() => setIsInstanceModalOpen(false)}>
-                <X size={20} className="text-gray-400" />
+                <X
+                  size={20}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                />
               </button>
             </div>
             <div className="p-6">
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                 Nome da Instância
               </label>
               <input
                 type="text"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
+                className="w-full border dark:border-gray-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Ex: Vendas Principal"
                 value={newInstanceName}
                 onChange={(e) => setNewInstanceName(e.target.value)}
                 autoFocus
               />
             </div>
-            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-2">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-2 border-t border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => setIsInstanceModalOpen(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm font-medium"
               >
                 Cancelar
               </button>
@@ -1787,10 +1816,10 @@ const AdminCompanyDetail = () => {
     <div className="space-y-6 animate-in fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="font-bold text-gray-800 text-lg">
+          <h3 className="font-bold text-gray-800 dark:text-white text-lg">
             Módulos Contratados
           </h3>
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             Ative ou desative funcionalidades.
           </p>
         </div>
@@ -1803,8 +1832,8 @@ const AdminCompanyDetail = () => {
               key={mod.id}
               className={`p-4 rounded-xl border transition-all ${
                 isActive
-                  ? "border-indigo-500 bg-indigo-50/30"
-                  : "border-gray-200 bg-white"
+                  ? "border-indigo-500 bg-indigo-50/30 dark:bg-indigo-900/20"
+                  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
               }`}
             >
               <div className="flex justify-between items-start">
@@ -1812,21 +1841,27 @@ const AdminCompanyDetail = () => {
                   <div
                     className={`p-2 rounded-lg ${
                       isActive
-                        ? "bg-indigo-100 text-indigo-600"
-                        : "bg-gray-100 text-gray-500"
+                        ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                     }`}
                   >
                     <Box size={20} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-800">{mod.name}</h4>
-                    <p className="text-xs text-gray-500">{mod.description}</p>
+                    <h4 className="font-bold text-gray-800 dark:text-white">
+                      {mod.name}
+                    </h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {mod.description}
+                    </p>
                   </div>
                 </div>
                 <button
                   onClick={() => toggleModule(mod.id, isActive)}
                   className={`text-2xl transition-colors ${
-                    isActive ? "text-indigo-600" : "text-gray-300"
+                    isActive
+                      ? "text-indigo-600 dark:text-indigo-400"
+                      : "text-gray-300 dark:text-gray-600"
                   }`}
                 >
                   {isActive ? (
@@ -1847,23 +1882,23 @@ const AdminCompanyDetail = () => {
     <div className="space-y-6 animate-in fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="font-bold text-gray-800 text-lg">
+          <h3 className="font-bold text-gray-800 dark:text-white text-lg">
             Histórico Financeiro
           </h3>
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             Faturas geradas e status de pagamento.
           </p>
         </div>
         <button
           onClick={() => openInvoiceModal()}
-          className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 hover:bg-gray-50"
+          className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700"
         >
           <Plus size={16} /> Nova Cobrança
         </button>
       </div>
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-colors">
         <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 text-gray-500 font-medium">
+          <thead className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 font-medium border-b border-gray-100 dark:border-gray-700">
             <tr>
               <th className="p-4">Fatura</th>
               <th className="p-4">Vencimento</th>
@@ -1872,26 +1907,29 @@ const AdminCompanyDetail = () => {
               <th className="p-4 text-right">Ações</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
             {invoices.map((inv) => (
-              <tr key={inv.id} className="hover:bg-gray-50">
-                <td className="p-4 font-medium text-gray-900 flex items-center gap-2">
+              <tr
+                key={inv.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <td className="p-4 font-medium text-gray-900 dark:text-white flex items-center gap-2">
                   <FileText size={16} className="text-gray-400" /> {inv.id}
                 </td>
-                <td className="p-4 text-gray-600">
+                <td className="p-4 text-gray-600 dark:text-gray-300">
                   {new Date(inv.dueDate).toLocaleDateString("pt-BR")}
                 </td>
-                <td className="p-4 font-bold text-gray-800">
+                <td className="p-4 font-bold text-gray-800 dark:text-white">
                   R$ {inv.amount.toFixed(2)}
                 </td>
                 <td className="p-4">
                   <span
                     className={`px-2 py-1 rounded text-xs font-bold uppercase ${
                       inv.status === "PAID"
-                        ? "bg-green-100 text-green-700"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                         : inv.status === "PENDING"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-red-100 text-red-700"
+                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                     }`}
                   >
                     {inv.status === "PAID"
@@ -1904,13 +1942,13 @@ const AdminCompanyDetail = () => {
                 <td className="p-4 text-right flex justify-end gap-2">
                   <button
                     onClick={() => openInvoiceModal(inv)}
-                    className="p-1.5 text-blue-500 hover:bg-blue-50 rounded transition"
+                    className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button
                     onClick={handleDownloadInvoice}
-                    className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition"
+                    className="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded transition"
                   >
                     <Download size={16} />
                   </button>
@@ -1919,7 +1957,10 @@ const AdminCompanyDetail = () => {
             ))}
             {invoices.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-gray-500">
+                <td
+                  colSpan={5}
+                  className="p-8 text-center text-gray-500 dark:text-gray-400"
+                >
                   Nenhuma fatura encontrada.
                 </td>
               </tr>
@@ -1929,23 +1970,26 @@ const AdminCompanyDetail = () => {
       </div>
       {isInvoiceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 border border-gray-100 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h3 className="font-bold text-gray-800 dark:text-white">
                 {editingInvoiceId ? "Editar Fatura" : "Nova Fatura"}
               </h3>
               <button onClick={() => setIsInvoiceModalOpen(false)}>
-                <X size={20} className="text-gray-400" />
+                <X
+                  size={20}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                   Valor (R$)
                 </label>
                 <input
                   type="number"
-                  className="w-full border rounded p-2"
+                  className="w-full border dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-indigo-500"
                   value={invoiceForm.amount}
                   onChange={(e) =>
                     setInvoiceForm({
@@ -1956,12 +2000,12 @@ const AdminCompanyDetail = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                   Vencimento
                 </label>
                 <input
                   type="date"
-                  className="w-full border rounded p-2"
+                  className="w-full border dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-indigo-500"
                   value={invoiceForm.dueDate}
                   onChange={(e) =>
                     setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })
@@ -1969,11 +2013,11 @@ const AdminCompanyDetail = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                   Status
                 </label>
                 <select
-                  className="w-full border rounded p-2"
+                  className="w-full border dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-indigo-500"
                   value={invoiceForm.status}
                   onChange={(e) =>
                     setInvoiceForm({
@@ -1988,10 +2032,10 @@ const AdminCompanyDetail = () => {
                 </select>
               </div>
             </div>
-            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-2">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-2 border-t border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => setIsInvoiceModalOpen(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 Cancelar
               </button>
@@ -2011,36 +2055,44 @@ const AdminCompanyDetail = () => {
   const renderUsageTab = () => (
     <div className="space-y-6 animate-in fade-in">
       <div>
-        <h3 className="font-bold text-gray-800 text-lg">Consumo e Métricas</h3>
-        <p className="text-gray-500 text-sm">
+        <h3 className="font-bold text-gray-800 dark:text-white text-lg">
+          Consumo e Métricas
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">
           Acompanhe o uso de recursos deste cliente.
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border shadow-sm">
-          <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+          <div className="flex items-center gap-2 mb-2 text-gray-500 dark:text-gray-400 text-sm font-medium">
             <MessageSquare size={16} /> Mensagens Enviadas
           </div>
-          <p className="text-2xl font-bold text-indigo-600">45.2k</p>
+          <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+            45.2k
+          </p>
           <p className="text-xs text-gray-400">Últimos 30 dias</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border shadow-sm">
-          <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+          <div className="flex items-center gap-2 mb-2 text-gray-500 dark:text-gray-400 text-sm font-medium">
             <User size={16} /> Contatos Ativos
           </div>
-          <p className="text-2xl font-bold text-green-600">8.450</p>
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+            8.450
+          </p>
           <p className="text-xs text-gray-400">+120 esta semana</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border shadow-sm">
-          <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+          <div className="flex items-center gap-2 mb-2 text-gray-500 dark:text-gray-400 text-sm font-medium">
             <Activity size={16} /> Taxa de Entrega
           </div>
-          <p className="text-2xl font-bold text-blue-600">98.2%</p>
+          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            98.2%
+          </p>
           <p className="text-xs text-gray-400">Estável</p>
         </div>
       </div>
-      <div className="bg-white p-6 rounded-xl border shadow-sm">
-        <h4 className="font-bold text-gray-800 mb-4">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+        <h4 className="font-bold text-gray-800 dark:text-white mb-4">
           Volume de Mensagens (Diário)
         </h4>
         <div className="h-64">
@@ -2068,7 +2120,15 @@ const AdminCompanyDetail = () => {
                 strokeDasharray="3 3"
                 stroke="#f3f4f6"
               />
-              <Tooltip />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: chartTheme.tooltipBg,
+                  borderColor: chartTheme.tooltipBorder,
+                  color: chartTheme.tooltipText,
+                  borderRadius: "8px",
+                }}
+                itemStyle={{ color: chartTheme.tooltipText }}
+              />
               <Area
                 type="monotone"
                 dataKey="msgs"
@@ -2086,37 +2146,43 @@ const AdminCompanyDetail = () => {
   const renderLogsTab = () => (
     <div className="space-y-6 animate-in fade-in">
       <div>
-        <h3 className="font-bold text-gray-800 text-lg">Logs de Auditoria</h3>
-        <p className="text-gray-500 text-sm">
+        <h3 className="font-bold text-gray-800 dark:text-white text-lg">
+          Logs de Auditoria
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">
           Registro de atividades e alterações nesta conta.
         </p>
       </div>
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="divide-y divide-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-colors">
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {logs.map((log) => (
             <div
               key={log.id}
-              className="p-4 hover:bg-gray-50 flex gap-4 items-start"
+              className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex gap-4 items-start"
             >
               <div
                 className={`mt-1 p-2 rounded-full ${
                   log.type === "warning"
-                    ? "bg-orange-100 text-orange-600"
+                    ? "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
                     : log.type === "error"
-                    ? "bg-red-100 text-red-600"
-                    : "bg-blue-100 text-blue-600"
+                    ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                    : "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
                 }`}
               >
                 <Activity size={16} />
               </div>
               <div className="flex-1">
                 <div className="flex justify-between items-start">
-                  <h4 className="font-medium text-gray-900">{log.action}</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white">
+                    {log.action}
+                  </h4>
                   <span className="text-xs text-gray-400 whitespace-nowrap">
                     {new Date(log.createdAt).toLocaleString("pt-BR")}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mt-0.5">{log.details}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
+                  {log.details}
+                </p>
                 <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                   <User size={10} /> {log.user}
                 </p>
@@ -2124,7 +2190,7 @@ const AdminCompanyDetail = () => {
             </div>
           ))}
           {logs.length === 0 && (
-            <p className="p-8 text-center text-gray-500">
+            <p className="p-8 text-center text-gray-500 dark:text-gray-400">
               Nenhum registro encontrado.
             </p>
           )}
@@ -2164,15 +2230,15 @@ const AdminCompanyDetail = () => {
       <div className="flex items-center gap-4">
         <Link
           to="/admin/companies"
-          className="p-2 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg text-gray-600 transition shadow-sm"
+          className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 transition shadow-sm"
         >
           <ArrowLeft size={20} />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 uppercase">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white uppercase">
             {company.name}
           </h1>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
             <div
               className={`w-2.5 h-2.5 rounded-full ${
                 company.status === "active" ? "bg-green-500" : "bg-gray-300"
@@ -2181,8 +2247,8 @@ const AdminCompanyDetail = () => {
             <span className="capitalize">
               {company.status === "active" ? "Ativo" : company.status}
             </span>
-            <span className="text-gray-300">•</span>
-            <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+            <span className="text-gray-300 dark:text-gray-600">•</span>
+            <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
               ID: {company.id}
             </span>
           </div>
@@ -2190,7 +2256,7 @@ const AdminCompanyDetail = () => {
       </div>
 
       {/* Navegação */}
-      <div className="border-b border-gray-200 bg-white px-4 rounded-t-xl shadow-sm">
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 rounded-t-xl shadow-sm transition-colors">
         <nav className="flex space-x-8 overflow-x-auto custom-scrollbar">
           {[
             { id: "overview", label: "Visão Geral", icon: Shield },
@@ -2208,7 +2274,7 @@ const AdminCompanyDetail = () => {
               className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                 activeTab === tab.id
                   ? "border-[#6C63FF] text-[#6C63FF]"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600"
               }`}
             >
               <tab.icon size={16} />

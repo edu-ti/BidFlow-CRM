@@ -301,7 +301,9 @@ const Layout: React.FC<LayoutProps> = ({
         <div className="p-6 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700">
           <div
             className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold ${
-              type === "admin" ? "bg-[#ffffff]" : "bg-indigo-600"
+              type === "admin"
+                ? "bg-[#ffffff] dark:bg-gray-800 dark:text-gray-800"
+                : "bg-indigo-600"
             }`}
           >
             {type === "admin" ? "M" : "B"}
