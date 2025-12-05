@@ -1,25 +1,39 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Mail, Lock, Loader2 } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../lib/firebase";
 
-interface ClientLoginProps {
-  onLogin: () => void;
-}
-
-const ClientLogin: React.FC<ClientLoginProps> = ({ onLogin }) => {
+const ClientLogin: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // App.tsx handles redirection
+    } catch (err: any) {
+      console.error("Erro no login:", err);
+      if (
+        err.code === "auth/invalid-credential" ||
+        err.code === "auth/user-not-found" ||
+        err.code === "auth/wrong-password"
+      ) {
+        setError("Email ou senha incorretos.");
+      } else if (err.code === "auth/too-many-requests") {
+        setError("Muitas tentativas. Tente novamente mais tarde.");
+      } else {
+        setError("Ocorreu um erro ao fazer login.");
+      }
       setLoading(false);
-      onLogin();
-      navigate("/app/dashboard");
-    }, 1500);
+    }
   };
 
   return (
@@ -33,7 +47,6 @@ const ClientLogin: React.FC<ClientLoginProps> = ({ onLogin }) => {
         </Link>
 
         <div className="text-center mb-8">
-          {/* NOVA LOGO LOGIN CLIENTE */}
           <img
             src="/assets/logo-1200.png"
             alt="BidFlow"
@@ -44,6 +57,12 @@ const ClientLogin: React.FC<ClientLoginProps> = ({ onLogin }) => {
           </h1>
           <p className="text-gray-500 mt-1">Acesse sua conta BidFlow</p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center gap-2">
+            <AlertCircle size={16} /> {error}
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
@@ -60,6 +79,8 @@ const ClientLogin: React.FC<ClientLoginProps> = ({ onLogin }) => {
                 required
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
                 placeholder="voce@suaempresa.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
           </div>
@@ -86,6 +107,8 @@ const ClientLogin: React.FC<ClientLoginProps> = ({ onLogin }) => {
                 required
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
                 placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           </div>
@@ -93,7 +116,7 @@ const ClientLogin: React.FC<ClientLoginProps> = ({ onLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center"
+            className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading ? (
               <Loader2 size={24} className="animate-spin" />

@@ -1,27 +1,44 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Shield, Lock, Loader2, KeyRound } from "lucide-react";
+import {
+  ArrowLeft,
+  Shield,
+  Lock,
+  Loader2,
+  KeyRound,
+  AlertCircle,
+} from "lucide-react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../lib/firebase";
 
-interface AdminLoginProps {
-  onLogin: (email: string) => void; // Agora aceita o email
-}
-
-const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
+const AdminLogin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
-    // Simulação de API (Aqui você pode adicionar login real do Firebase se quiser)
-    setTimeout(() => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // App.tsx handles redirection
+    } catch (err: any) {
+      console.error("Erro no login admin:", err);
+      if (
+        err.code === "auth/invalid-credential" ||
+        err.code === "auth/user-not-found" ||
+        err.code === "auth/wrong-password"
+      ) {
+        setError("Credenciais inválidas.");
+      } else {
+        setError("Erro de autenticação. Tente novamente.");
+      }
       setLoading(false);
-      onLogin(email); // Passa o email digitado para o App
-      navigate("/admin/dashboard");
-    }, 1500);
+    }
   };
 
   return (
@@ -35,7 +52,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         </Link>
 
         <div className="text-center mb-8">
-          {/* NOVA LOGO LOGIN ADMIN - Versão clara/branca se necessário, ou original */}
           <div className="bg-white/10 p-4 rounded-xl mb-4 inline-block">
             <img
               src="/assets/logo-1200.png"
@@ -48,6 +64,12 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
             Área restrita para equipe BidFlow
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-900/50 text-red-300 text-sm rounded-lg flex items-center gap-2 border border-red-800">
+            <AlertCircle size={16} /> {error}
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
@@ -93,7 +115,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#6C63FF] text-white py-3 rounded-xl font-bold text-lg hover:bg-[#5a52d6] transition shadow-lg shadow-purple-900/30 flex items-center justify-center"
+            className="w-full bg-[#6C63FF] text-white py-3 rounded-xl font-bold text-lg hover:bg-[#5a52d6] transition shadow-lg shadow-purple-900/30 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading ? (
               <Loader2 size={24} className="animate-spin" />

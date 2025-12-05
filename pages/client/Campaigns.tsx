@@ -1,27 +1,140 @@
-import React, { useState } from 'react';
-import { Plus, Megaphone, CheckCircle2, Clock, Search, Filter, MoreHorizontal, Send, MessageCircle, Mail } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  Megaphone,
+  CheckCircle2,
+  Clock,
+  Search,
+  Filter,
+  MoreHorizontal,
+  Send,
+  MessageCircle,
+  Mail,
+  Loader2,
+  X,
+  Trash2,
+} from "lucide-react";
+import { db, auth, appId } from "../../lib/firebase";
+import {
+  collection,
+  query,
+  onSnapshot,
+  orderBy,
+  addDoc,
+  deleteDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
+import ConfirmModal from "../../components/ConfirmModal";
 
 interface Campaign {
-  id: number;
+  id: string;
   name: string;
-  channel: 'whatsapp' | 'email' | 'sms';
-  status: 'active' | 'completed' | 'draft' | 'scheduled' | 'paused';
+  channel: "whatsapp" | "email" | "sms";
+  status: "active" | "completed" | "draft" | "scheduled" | "paused";
   sent: number;
   openRate: string;
   date: string;
+  createdAt: string;
 }
 
-const initialCampaigns: Campaign[] = [
-  { id: 1, name: 'Oferta de Verão', channel: 'whatsapp', status: 'completed', sent: 1250, openRate: '94%', date: '15 Out' },
-  { id: 2, name: 'Newsletter Semanal', channel: 'email', status: 'active', sent: 3400, openRate: '28%', date: '22 Out' },
-  { id: 3, name: 'Recuperação de Carrinho', channel: 'sms', status: 'paused', sent: 120, openRate: '15%', date: 'Recorrente' },
-  { id: 4, name: 'Black Friday Teaser', channel: 'whatsapp', status: 'scheduled', sent: 0, openRate: '-', date: '01 Nov' },
-  { id: 5, name: 'Bem-vindo ao Clube', channel: 'email', status: 'draft', sent: 0, openRate: '-', date: '-' },
-];
-
 const Campaigns = () => {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newCampaign, setNewCampaign] = useState<Partial<Campaign>>({
+    name: "",
+    channel: "whatsapp",
+    status: "draft",
+    sent: 0,
+    openRate: "0%",
+  });
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const q = query(
+      collection(
+        db,
+        "artifacts",
+        appId,
+        "users",
+        auth.currentUser.uid,
+        "campaigns"
+      ),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetched = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().date
+          ? new Date(doc.data().date).toLocaleDateString()
+          : "-",
+      })) as Campaign[];
+      setCampaigns(fetched);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleCreateCampaign = async () => {
+    if (!newCampaign.name || !auth.currentUser) return;
+
+    try {
+      await addDoc(
+        collection(
+          db,
+          "artifacts",
+          appId,
+          "users",
+          auth.currentUser.uid,
+          "campaigns"
+        ),
+        {
+          ...newCampaign,
+          createdAt: new Date().toISOString(),
+          date: new Date().toISOString(),
+        }
+      );
+      setIsModalOpen(false);
+      setNewCampaign({
+        name: "",
+        channel: "whatsapp",
+        status: "draft",
+        sent: 0,
+        openRate: "0%",
+      });
+    } catch (error) {
+      console.error("Erro ao criar campanha:", error);
+    }
+  };
+
+  const handleDeleteCampaign = async (id: string) => {
+    if (!auth.currentUser) return;
+    if (confirm("Tem certeza que deseja excluir esta campanha?")) {
+      try {
+        await deleteDoc(
+          doc(
+            db,
+            "artifacts",
+            appId,
+            "users",
+            auth.currentUser.uid,
+            "campaigns",
+            id
+          )
+        );
+      } catch (error) {
+        console.error("Erro ao excluir:", error);
+      }
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -60,7 +173,7 @@ const Campaigns = () => {
     }
   };
 
-  const filteredCampaigns = initialCampaigns.filter(
+  const filteredCampaigns = campaigns.filter(
     (c) =>
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
       (filterStatus === "all" || c.status === filterStatus)
@@ -77,12 +190,14 @@ const Campaigns = () => {
             Gerencie seus disparos em massa e automações.
           </p>
         </div>
-        <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 font-medium transition shadow-sm">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 font-medium transition shadow-sm"
+        >
           <Plus size={18} /> Nova Campanha
         </button>
       </div>
 
-      {/* Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4">
           <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400">
@@ -90,10 +205,12 @@ const Campaigns = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-              Total Enviado (Mês)
+              Total Enviado
             </p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              12.450
+              {campaigns
+                .reduce((acc, curr) => acc + (curr.sent || 0), 0)
+                .toLocaleString()}
             </p>
           </div>
         </div>
@@ -103,10 +220,10 @@ const Campaigns = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-              Taxa de Entrega
+              Campanhas Ativas
             </p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              98.2%
+              {campaigns.filter((c) => c.status === "active").length}
             </p>
           </div>
         </div>
@@ -119,13 +236,12 @@ const Campaigns = () => {
               Agendadas
             </p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              3
+              {campaigns.filter((c) => c.status === "scheduled").length}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Filters & List */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row gap-4 justify-between">
           <div className="relative w-full md:w-96">
@@ -153,9 +269,6 @@ const Campaigns = () => {
               <option value="scheduled">Agendadas</option>
               <option value="draft">Rascunhos</option>
             </select>
-            <button className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
-              <Filter size={18} />
-            </button>
           </div>
         </div>
 
@@ -173,54 +286,13 @@ const Campaigns = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {filteredCampaigns.map((campaign) => (
-                <tr
-                  key={campaign.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition group"
-                >
-                  <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                    {campaign.name}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 capitalize">
-                      {getChannelIcon(campaign.channel)}
-                      {campaign.channel}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${getStatusColor(
-                        campaign.status
-                      )}`}
-                    >
-                      {campaign.status === "paused"
-                        ? "Pausada"
-                        : campaign.status === "scheduled"
-                        ? "Agendada"
-                        : campaign.status === "draft"
-                        ? "Rascunho"
-                        : campaign.status === "completed"
-                        ? "Concluída"
-                        : "Ativa"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">
-                    {campaign.sent.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">
-                    {campaign.openRate}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">
-                    {campaign.date}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
-                      <MoreHorizontal size={18} />
-                    </button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center">
+                    <Loader2 className="animate-spin inline text-indigo-600" />
                   </td>
                 </tr>
-              ))}
-              {filteredCampaigns.length === 0 && (
+              ) : filteredCampaigns.length === 0 ? (
                 <tr>
                   <td
                     colSpan={7}
@@ -229,15 +301,121 @@ const Campaigns = () => {
                     Nenhuma campanha encontrada.
                   </td>
                 </tr>
+              ) : (
+                filteredCampaigns.map((campaign) => (
+                  <tr
+                    key={campaign.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition group"
+                  >
+                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                      {campaign.name}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 capitalize">
+                        {getChannelIcon(campaign.channel)}
+                        {campaign.channel}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${getStatusColor(
+                          campaign.status
+                        )}`}
+                      >
+                        {campaign.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">
+                      {campaign.sent?.toLocaleString() || 0}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">
+                      {campaign.openRate}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">
+                      {campaign.date}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => handleDeleteCampaign(campaign.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-500 dark:text-gray-400">
-          Mostrando {filteredCampaigns.length} de {initialCampaigns.length}{" "}
-          campanhas
-        </div>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-xl shadow-2xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+                Nova Campanha
+              </h3>
+              <button onClick={() => setIsModalOpen(false)}>
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <input
+                className="w-full border p-2 rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                placeholder="Nome da Campanha"
+                value={newCampaign.name}
+                onChange={(e) =>
+                  setNewCampaign({ ...newCampaign, name: e.target.value })
+                }
+              />
+              <select
+                className="w-full border p-2 rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                value={newCampaign.channel}
+                onChange={(e) =>
+                  setNewCampaign({
+                    ...newCampaign,
+                    channel: e.target.value as any,
+                  })
+                }
+              >
+                <option value="whatsapp">WhatsApp</option>
+                <option value="email">Email</option>
+                <option value="sms">SMS</option>
+              </select>
+              <select
+                className="w-full border p-2 rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                value={newCampaign.status}
+                onChange={(e) =>
+                  setNewCampaign({
+                    ...newCampaign,
+                    status: e.target.value as any,
+                  })
+                }
+              >
+                <option value="draft">Rascunho</option>
+                <option value="scheduled">Agendada</option>
+                <option value="active">Ativa (Enviar Agora)</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 text-gray-600"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateCampaign}
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+              >
+                Criar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

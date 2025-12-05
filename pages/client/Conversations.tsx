@@ -1,23 +1,152 @@
-import React, { useState } from 'react';
-import { Search, Paperclip, Send, MoreVertical, Smile, Check, CheckCheck, Phone, Video, MessageSquare } from 'lucide-react';
-import { Conversation, Message } from '../../types';
-
-const mockConversations: Conversation[] = [
-  { id: '1', contactId: 'c1', contactName: 'Ana Silva', lastMessage: 'Obrigada pelo orçamento!', unreadCount: 2, timestamp: '10:30', avatar: 'https://picsum.photos/seed/1/100' },
-  { id: '2', contactId: 'c2', contactName: 'Carlos Oliveira', lastMessage: 'Pode me ligar amanhã?', unreadCount: 0, timestamp: 'Ontem', avatar: 'https://picsum.photos/seed/2/100' },
-  { id: '3', contactId: 'c3', contactName: 'Marina Souza', lastMessage: 'Gostei da proposta.', unreadCount: 0, timestamp: 'Ontem', avatar: 'https://picsum.photos/seed/3/100' },
-];
-
-const mockMessages: Message[] = [
-  { id: '1', content: 'Olá Ana, tudo bem? Vi seu interesse no nosso plano.', sender: 'me', timestamp: '10:00', status: 'read', type: 'text' },
-  { id: '2', content: 'Oi! Tudo ótimo. Sim, gostaria de saber mais valores.', sender: 'contact', timestamp: '10:05', status: 'read', type: 'text' },
-  { id: '3', content: 'Claro! Temos planos a partir de R$ 99,00.', sender: 'me', timestamp: '10:06', status: 'read', type: 'text' },
-  { id: '4', content: 'Obrigada pelo orçamento!', sender: 'contact', timestamp: '10:30', status: 'read', type: 'text' },
-];
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Search,
+  Paperclip,
+  Send,
+  MoreVertical,
+  Smile,
+  Check,
+  CheckCheck,
+  Phone,
+  Video,
+  MessageSquare,
+  Loader2,
+} from "lucide-react";
+import { Conversation, Message } from "../../types";
+import { db, auth, appId } from "../../lib/firebase";
+import {
+  collection,
+  query,
+  onSnapshot,
+  orderBy,
+  addDoc,
+  serverTimestamp,
+  doc,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 
 const Conversations = () => {
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 1. Carregar Conversas
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const q = query(
+      collection(
+        db,
+        "artifacts",
+        appId,
+        "users",
+        auth.currentUser.uid,
+        "conversations"
+      ),
+      orderBy("lastMessageAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetched = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().lastMessageAt
+          ? new Date(doc.data().lastMessageAt).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "",
+      })) as Conversation[];
+      setConversations(fetched);
+      setIsLoadingChats(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Carregar Mensagens ao selecionar
+  useEffect(() => {
+    if (!selectedChatId || !auth.currentUser) return;
+    setIsLoadingMessages(true);
+
+    const q = query(
+      collection(
+        db,
+        "artifacts",
+        appId,
+        "users",
+        auth.currentUser.uid,
+        "conversations",
+        selectedChatId,
+        "messages"
+      ),
+      orderBy("createdAt", "asc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetched = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().createdAt
+          ? new Date(doc.data().createdAt).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "",
+      })) as Message[];
+      setMessages(fetched);
+      setIsLoadingMessages(false);
+      setTimeout(
+        () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+        100
+      );
+    });
+
+    return () => unsubscribe();
+  }, [selectedChatId]);
+
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !selectedChatId || !auth.currentUser) return;
+
+    try {
+      const now = new Date().toISOString();
+      const chatRef = doc(
+        db,
+        "artifacts",
+        appId,
+        "users",
+        auth.currentUser.uid,
+        "conversations",
+        selectedChatId
+      );
+      const messagesRef = collection(chatRef, "messages");
+
+      await addDoc(messagesRef, {
+        content: messageInput,
+        sender: "me",
+        status: "sent",
+        createdAt: now,
+        type: "text",
+      });
+
+      await updateDoc(chatRef, {
+        lastMessage: messageInput,
+        lastMessageAt: now,
+        unreadCount: 0,
+      });
+
+      setMessageInput("");
+    } catch (error) {
+      console.error("Erro ao enviar:", error);
+    }
+  };
+
+  const activeChat = conversations.find((c) => c.id === selectedChatId);
 
   return (
     <div className="flex h-[calc(100vh-6rem)] bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
@@ -38,64 +167,75 @@ const Conversations = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800">
-          {mockConversations.map((conv) => (
-            <div
-              key={conv.id}
-              onClick={() => setSelectedChat(conv.id)}
-              className={`p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition ${
-                selectedChat === conv.id
-                  ? "bg-indigo-50 dark:bg-indigo-900/30"
-                  : ""
-              }`}
-            >
-              <img
-                src={conv.avatar}
-                alt={conv.contactName}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center mb-1">
-                  <h4 className="font-semibold text-gray-900 dark:text-white truncate">
-                    {conv.contactName}
-                  </h4>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {conv.timestamp}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                  {conv.lastMessage}
-                </p>
-              </div>
-              {conv.unreadCount > 0 && (
-                <span className="bg-green-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
-                  {conv.unreadCount}
-                </span>
-              )}
+          {isLoadingChats ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="animate-spin text-indigo-600" />
             </div>
-          ))}
+          ) : conversations.length === 0 ? (
+            <div className="p-8 text-center text-gray-500 text-sm">
+              Nenhuma conversa iniciada.
+            </div>
+          ) : (
+            conversations.map((conv) => (
+              <div
+                key={conv.id}
+                onClick={() => setSelectedChatId(conv.id)}
+                className={`p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition border-b border-gray-50 dark:border-gray-700/50 ${
+                  selectedChatId === conv.id
+                    ? "bg-indigo-50 dark:bg-indigo-900/30"
+                    : ""
+                }`}
+              >
+                <img
+                  src={
+                    conv.avatar ||
+                    `https://ui-avatars.com/api/?name=${conv.contactName}&background=random`
+                  }
+                  alt={conv.contactName}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-center mb-1">
+                    <h4 className="font-semibold text-gray-900 dark:text-white truncate">
+                      {conv.contactName}
+                    </h4>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {conv.timestamp}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                    {conv.lastMessage}
+                  </p>
+                </div>
+                {conv.unreadCount > 0 && (
+                  <span className="bg-green-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                    {conv.unreadCount}
+                  </span>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
 
       {/* Chat Area */}
       <div className="hidden md:flex flex-1 flex-col bg-[#e5ddd5] dark:bg-[#0b141a] relative">
-        {selectedChat ? (
+        {selectedChatId && activeChat ? (
           <>
             {/* Header */}
             <div className="bg-gray-100 dark:bg-gray-800 p-3 flex justify-between items-center border-b border-gray-200 dark:border-gray-700 z-10">
               <div className="flex items-center gap-3">
                 <img
                   src={
-                    mockConversations.find((c) => c.id === selectedChat)?.avatar
+                    activeChat.avatar ||
+                    `https://ui-avatars.com/api/?name=${activeChat.contactName}`
                   }
                   className="w-10 h-10 rounded-full"
                   alt=""
                 />
                 <div>
                   <h3 className="font-semibold text-gray-800 dark:text-white">
-                    {
-                      mockConversations.find((c) => c.id === selectedChat)
-                        ?.contactName
-                    }
+                    {activeChat.contactName}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Online agora
@@ -113,7 +253,7 @@ const Conversations = () => {
 
             {/* Messages List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 relative z-0">
-              {mockMessages.map((msg) => (
+              {messages.map((msg) => (
                 <div
                   key={msg.id}
                   className={`flex ${
@@ -127,7 +267,7 @@ const Conversations = () => {
                         : "bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-tl-none"
                     }`}
                   >
-                    <p className="text-sm">{msg.content}</p>
+                    <p className="text-sm break-words">{msg.content}</p>
                     <div className="flex justify-end items-center gap-1 mt-1">
                       <span className="text-[10px] text-gray-500 dark:text-gray-300">
                         {msg.timestamp}
@@ -145,6 +285,7 @@ const Conversations = () => {
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input Area */}
@@ -161,10 +302,14 @@ const Conversations = () => {
                 type="text"
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                 placeholder="Digite uma mensagem"
                 className="flex-1 bg-white dark:bg-gray-700 py-2 px-4 rounded-lg focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               />
-              <button className="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-700 transition">
+              <button
+                onClick={handleSendMessage}
+                className="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-700 transition"
+              >
                 <Send size={20} />
               </button>
             </div>
@@ -181,8 +326,7 @@ const Conversations = () => {
               BidFlow Web
             </h2>
             <p className="text-gray-400 dark:text-gray-500 mt-2">
-              Envie e receba mensagens sem precisar manter seu celular
-              conectado.
+              Selecione uma conversa para começar o atendimento.
             </p>
           </div>
         )}

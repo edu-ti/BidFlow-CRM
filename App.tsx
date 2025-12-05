@@ -36,15 +36,25 @@ import {
   ChevronUp,
   User,
   Lock,
+  FileText, // Ícone para Propostas
+  BookOpen, // Ícone para Catálogo
 } from "lucide-react";
 import {
   onAuthStateChanged,
   signInAnonymously,
   signInWithCustomToken,
   signOut,
+  User as FirebaseUser,
 } from "firebase/auth";
 import { auth, db, initialAuthToken, appId } from "./lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 
 // Public Pages
 import Landing from "./pages/Landing";
@@ -62,6 +72,8 @@ import Tasks from "./pages/client/Tasks";
 import Calendar from "./pages/client/Calendar";
 import Reports from "./pages/client/Reports";
 import Settings from "./pages/client/Settings";
+import Proposals from "./pages/client/Proposals"; // Nova Página
+import Catalog from "./pages/client/Catalog"; // Nova Página
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -79,7 +91,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminIntegrations from "./pages/admin/AdminIntegrations";
 
 // Auth Types
-type UserRole = "GUEST" | "CLIENT" | "SUPERADMIN";
+type UserRole = "GUEST" | "CLIENT" | "SUPERADMIN" | "LOADING";
 
 // Interface de Permissões
 interface AdminPermissions {
@@ -119,7 +131,6 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
     }`}
   >
-    {/* Ícone com cor da marca se ativo ou se estiver em hover (efeito visual melhorado) */}
     <Icon
       size={20}
       className={`transition-colors ${
@@ -151,7 +162,6 @@ const Layout: React.FC<LayoutProps> = ({
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Estado do Tema (Dark Mode) - Com Persistência
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme") === "dark";
@@ -159,11 +169,9 @@ const Layout: React.FC<LayoutProps> = ({
     return false;
   });
 
-  // Estado do Menu de Usuário
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Efeito para aplicar o tema
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
@@ -174,7 +182,6 @@ const Layout: React.FC<LayoutProps> = ({
     }
   }, [isDarkMode]);
 
-  // Fechar menu ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -197,17 +204,18 @@ const Layout: React.FC<LayoutProps> = ({
   const clientLinks = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/app/dashboard" },
     { icon: MessageSquare, label: "Conversas", path: "/app/conversations" },
-    { icon: Users, label: "Contatos", path: "/app/contacts" },
+    { icon: Users, label: "Clientes", path: "/app/contacts" }, // Renomeado de Contatos para Clientes
     { icon: Filter, label: "Funil de Vendas", path: "/app/funnel" },
     { icon: Bot, label: "Chatbot", path: "/app/chatbot" },
     { icon: Megaphone, label: "Campanhas", path: "/app/campaigns" },
     { icon: CheckSquare, label: "Tarefas", path: "/app/tasks" },
     { icon: CalendarIcon, label: "Agenda", path: "/app/calendar" },
+    { icon: FileText, label: "Propostas", path: "/app/proposals" }, // Novo item
+    { icon: BookOpen, label: "Catálogo", path: "/app/catalog" }, // Novo item
     { icon: BarChart3, label: "Relatórios", path: "/app/reports" },
     { icon: SettingsIcon, label: "Configurações", path: "/app/settings" },
   ];
 
-  // Links Admin com Permissões Requeridas
   const allAdminLinks = [
     {
       icon: LayoutDashboard,
@@ -296,7 +304,6 @@ const Layout: React.FC<LayoutProps> = ({
         isDarkMode ? "dark" : ""
       }`}
     >
-      {/* Sidebar */}
       <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full hidden md:flex z-20 transition-all duration-300">
         <div className="p-6 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700">
           <div
@@ -333,24 +340,19 @@ const Layout: React.FC<LayoutProps> = ({
           ))}
         </nav>
 
-        {/* Área do Usuário com Menu Dropdown */}
         <div
           className="p-4 border-t border-gray-100 dark:border-gray-700 relative"
           ref={userMenuRef}
         >
-          {/* Menu Flutuante */}
           {isUserMenuOpen && (
             <div className="absolute bottom-20 left-4 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in slide-in-from-bottom-2 z-50">
               <div className="p-1">
-                {/* Botão Meu Perfil - Vai para Configurações */}
                 <button
                   onClick={handleNavigateToSettings}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
                 >
                   <User size={16} className="text-gray-500" /> Meu Perfil
                 </button>
-
-                {/* Botão Alterar Senha - Vai para Configurações */}
                 <button
                   onClick={handleNavigateToSettings}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
@@ -361,8 +363,6 @@ const Layout: React.FC<LayoutProps> = ({
                   />{" "}
                   Alterar Senha
                 </button>
-
-                {/* Botão Preferências - Vai para Configurações */}
                 <button
                   onClick={handleNavigateToSettings}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
@@ -373,10 +373,7 @@ const Layout: React.FC<LayoutProps> = ({
                   />{" "}
                   Preferências
                 </button>
-
                 <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
-
-                {/* Botão Modo Escuro - Funcional */}
                 <button
                   onClick={() => setIsDarkMode(!isDarkMode)}
                   className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
@@ -390,10 +387,7 @@ const Layout: React.FC<LayoutProps> = ({
                     <span>{isDarkMode ? "Modo Claro" : "Modo Escuro"}</span>
                   </div>
                 </button>
-
                 <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
-
-                {/* Botão Sair */}
                 <button
                   onClick={onLogout}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition font-medium"
@@ -404,7 +398,6 @@ const Layout: React.FC<LayoutProps> = ({
             </div>
           )}
 
-          {/* Cartão do Usuário (Clicável para abrir menu) */}
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
             className="flex items-center gap-3 px-3 py-2 w-full hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-left group border border-transparent hover:border-gray-100 dark:hover:border-gray-600"
@@ -432,10 +425,8 @@ const Layout: React.FC<LayoutProps> = ({
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center px-4 md:hidden justify-between">
-          {/* NOVA LOGO MOBILE AQUI */}
           <img
             src="/assets/logo-1200.png"
             alt="BidFlow"
@@ -448,7 +439,6 @@ const Layout: React.FC<LayoutProps> = ({
             Menu
           </button>
         </header>
-
         <div className="flex-1 overflow-auto p-4 md:p-8 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
           {children}
         </div>
@@ -458,108 +448,96 @@ const Layout: React.FC<LayoutProps> = ({
 };
 
 const App = () => {
-  const [role, setRole] = useState<UserRole>("GUEST");
-  const [userEmail, setUserEmail] = useState("");
+  const [role, setRole] = useState<UserRole>("LOADING");
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [adminPermissions, setAdminPermissions] =
     useState<AdminPermissions>(defaultPermissions);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const initAuth = async () => {
-      try {
-        if (initialAuthToken) {
-          await signInWithCustomToken(auth, initialAuthToken);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (error) {
-        console.error("Erro na autenticação:", error);
+      if (initialAuthToken) {
+        await signInWithCustomToken(auth, initialAuthToken);
+      } else {
+        await signInAnonymously(auth);
       }
     };
     initAuth();
-    const unsubscribe = onAuthStateChanged(auth, () => setIsLoading(false));
+
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        try {
+          if (currentUser.isAnonymous) {
+            setRole("GUEST");
+            setUserProfile({
+              name: "Visitante",
+              email: "guest@bidflow.com",
+              avatar: "https://ui-avatars.com/api/?name=Guest",
+            });
+            return;
+          }
+
+          const teamQuery = query(
+            collection(db, "artifacts", appId, "team"),
+            where("email", "==", currentUser.email)
+          );
+          const teamSnap = await getDocs(teamQuery);
+
+          if (!teamSnap.empty) {
+            const adminData = teamSnap.docs[0].data();
+            setAdminPermissions({
+              superadmin: adminData.role === "superadmin",
+              finance: adminData.permissions?.finance || false,
+              support: adminData.permissions?.support || false,
+              tech: adminData.permissions?.tech || false,
+              sales: adminData.permissions?.sales || false,
+            });
+            setUserProfile({
+              name: adminData.name,
+              email: adminData.email,
+              avatar: `https://ui-avatars.com/api/?name=${adminData.name}&background=6C63FF&color=fff`,
+            });
+            setRole("SUPERADMIN");
+            return;
+          }
+
+          setRole("CLIENT");
+          setUserProfile({
+            name:
+              currentUser.displayName ||
+              currentUser.email?.split("@")[0] ||
+              "Usuário",
+            email: currentUser.email,
+            avatar:
+              currentUser.photoURL ||
+              `https://ui-avatars.com/api/?name=${currentUser.email}`,
+          });
+        } catch (error) {
+          console.error("Erro ao verificar role:", error);
+          setRole("GUEST");
+        }
+      } else {
+        setRole("GUEST");
+        setUserProfile(null);
+      }
+    });
+
     return () => unsubscribe();
   }, []);
 
-  const handleAdminLogin = async (email: string) => {
-    setIsLoading(true);
-    setUserEmail(email);
-
-    if (email === "admin@bidflow.com" || email === "admin.master") {
-      setAdminPermissions({ ...defaultPermissions, superadmin: true });
-      setRole("SUPERADMIN");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const q = query(
-        collection(db, "artifacts", appId, "team"),
-        where("email", "==", email)
-      );
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        const userData = querySnapshot.docs[0].data();
-        if (userData.status === "inactive") {
-          alert("Acesso negado: Conta desativada.");
-          setRole("GUEST");
-          setIsLoading(false);
-          return;
-        }
-        setAdminPermissions({
-          superadmin: false,
-          finance: userData.permissions?.finance || false,
-          support: userData.permissions?.support || false,
-          tech: userData.permissions?.tech || false,
-          sales: userData.permissions?.sales || false,
-        });
-        setRole("SUPERADMIN");
-      } else {
-        alert("Usuário não encontrado na equipe.");
-        setRole("GUEST");
-      }
-    } catch (error) {
-      console.error("Erro permissões:", error);
-      alert("Erro de conexão.");
-      setRole("GUEST");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleClientLogin = () => {
-    setRole("CLIENT");
-  };
-
   const handleLogout = async () => {
-    await signOut(auth); // Logout real
+    await signOut(auth);
     setRole("GUEST");
-    setUserEmail("");
+    setUserProfile(null);
     setAdminPermissions(defaultPermissions);
   };
 
-  const userData =
-    role === "SUPERADMIN"
-      ? {
-          name: userEmail.split("@")[0] || "Admin",
-          email: userEmail || "admin@bidflow.com",
-          avatar: `https://ui-avatars.com/api/?name=${
-            userEmail || "Admin"
-          }&background=6C63FF&color=fff`,
-        }
-      : {
-          name: "Alex Vendor",
-          email: "alex@company.com",
-          avatar: "https://picsum.photos/200",
-        };
-
-  if (isLoading)
+  if (role === "LOADING") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        Carregando...
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-500">
+        Carregando aplicação...
       </div>
     );
+  }
 
   return (
     <HashRouter>
@@ -582,7 +560,7 @@ const App = () => {
           path="/login"
           element={
             role === "GUEST" ? (
-              <ClientLogin onLogin={handleClientLogin} />
+              <ClientLogin />
             ) : (
               <Navigate to="/app/dashboard" />
             )
@@ -592,7 +570,7 @@ const App = () => {
           path="/master"
           element={
             role === "GUEST" ? (
-              <AdminLogin onLogin={handleAdminLogin} />
+              <AdminLogin />
             ) : (
               <Navigate to="/admin/dashboard" />
             )
@@ -603,7 +581,11 @@ const App = () => {
           path="/app/*"
           element={
             role === "CLIENT" ? (
-              <Layout type="client" onLogout={handleLogout} user={userData}>
+              <Layout
+                type="client"
+                onLogout={handleLogout}
+                user={userProfile || { name: "User", email: "", avatar: "" }}
+              >
                 <Routes>
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="conversations" element={<Conversations />} />
@@ -613,6 +595,10 @@ const App = () => {
                   <Route path="campaigns" element={<Campaigns />} />
                   <Route path="tasks" element={<Tasks />} />
                   <Route path="calendar" element={<Calendar />} />
+                  <Route path="proposals" element={<Proposals />} />{" "}
+                  {/* Nova Rota */}
+                  <Route path="catalog" element={<Catalog />} />{" "}
+                  {/* Nova Rota */}
                   <Route path="reports" element={<Reports />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="*" element={<Navigate to="/app/dashboard" />} />
@@ -631,135 +617,26 @@ const App = () => {
               <Layout
                 type="admin"
                 onLogout={handleLogout}
-                user={userData}
+                user={userProfile || { name: "Admin", email: "", avatar: "" }}
                 permissions={adminPermissions}
               >
                 <Routes>
                   <Route path="dashboard" element={<AdminDashboard />} />
-                  <Route
-                    path="companies"
-                    element={
-                      adminPermissions.sales || adminPermissions.superadmin ? (
-                        <AdminCompanies />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
-                  />
+                  <Route path="companies" element={<AdminCompanies />} />
                   <Route
                     path="companies/:id"
-                    element={
-                      adminPermissions.sales || adminPermissions.superadmin ? (
-                        <AdminCompanyDetail />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
+                    element={<AdminCompanyDetail />}
                   />
-                  <Route
-                    path="plans"
-                    element={
-                      adminPermissions.finance ||
-                      adminPermissions.superadmin ? (
-                        <AdminPlans />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="finance"
-                    element={
-                      adminPermissions.finance ||
-                      adminPermissions.superadmin ? (
-                        <AdminFinance />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="instances"
-                    element={
-                      adminPermissions.tech || adminPermissions.superadmin ? (
-                        <AdminInstances />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="integrations"
-                    element={
-                      adminPermissions.tech || adminPermissions.superadmin ? (
-                        <AdminIntegrations />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="logs"
-                    element={
-                      adminPermissions.tech || adminPermissions.superadmin ? (
-                        <AdminLogs />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="settings"
-                    element={
-                      adminPermissions.tech || adminPermissions.superadmin ? (
-                        <AdminSettings />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="modules"
-                    element={
-                      adminPermissions.sales || adminPermissions.superadmin ? (
-                        <AdminModules />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="templates"
-                    element={
-                      adminPermissions.support ||
-                      adminPermissions.superadmin ? (
-                        <AdminTemplates />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="support"
-                    element={
-                      adminPermissions.support ||
-                      adminPermissions.superadmin ? (
-                        <AdminSupport />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="team"
-                    element={
-                      adminPermissions.superadmin ? (
-                        <AdminTeam />
-                      ) : (
-                        <Navigate to="/admin/dashboard" />
-                      )
-                    }
-                  />
+                  <Route path="plans" element={<AdminPlans />} />
+                  <Route path="finance" element={<AdminFinance />} />
+                  <Route path="instances" element={<AdminInstances />} />
+                  <Route path="integrations" element={<AdminIntegrations />} />
+                  <Route path="logs" element={<AdminLogs />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                  <Route path="modules" element={<AdminModules />} />
+                  <Route path="templates" element={<AdminTemplates />} />
+                  <Route path="support" element={<AdminSupport />} />
+                  <Route path="team" element={<AdminTeam />} />
                   <Route
                     path="*"
                     element={<Navigate to="/admin/dashboard" />}
