@@ -456,6 +456,22 @@ const Proposals = () => {
             </tbody>
           </table>
         </div>
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Mostrando {mockProposals.length} de 24 propostas
+          </p>
+          <div className="flex gap-2">
+            <button className="p-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 disabled:opacity-50">
+              <ChevronLeft size={18} />
+            </button>
+            <span className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Página 1 de 5
+            </span>
+            <button className="p-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

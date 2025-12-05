@@ -15,6 +15,9 @@ import {
   Briefcase,
   Loader2,
   Upload,
+  FileSpreadsheet,
+  AlertCircle,
+  Download,
 } from "lucide-react";
 import { db, auth, appId } from "../../lib/firebase";
 import {
@@ -46,8 +49,8 @@ interface Organization {
 
 interface ContactPerson {
   id: string;
-  organizationId: string; // Link to Organization
-  organizationName?: string; // For display
+  organizationId: string;
+  organizationName?: string;
   name: string;
   role: string;
   sector: string;
@@ -77,6 +80,7 @@ const Contacts = () => {
   >("organizations");
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingAPI, setIsLoadingAPI] = useState(false);
 
   // Data States
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -87,6 +91,10 @@ const Contacts = () => {
   const [isOrgModalOpen, setIsOrgModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isIndividualModalOpen, setIsIndividualModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // Editing State
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Forms
   const [orgForm, setOrgForm] = useState<Partial<Organization>>({});
@@ -94,6 +102,7 @@ const Contacts = () => {
   const [individualForm, setIndividualForm] = useState<
     Partial<IndividualClient>
   >({});
+  const [importFile, setImportFile] = useState<File | null>(null);
 
   // Fetch Data
   useEffect(() => {
@@ -135,61 +144,196 @@ const Contacts = () => {
     };
   }, []);
 
-  // Handlers
+  // --- API Helpers ---
+  const fetchCNPJ = async (cnpj: string) => {
+    if (!cnpj) return;
+    const cleanCNPJ = cnpj.replace(/\D/g, "");
+    if (cleanCNPJ.length !== 14) return;
+
+    setIsLoadingAPI(true);
+    try {
+      const response = await fetch(
+        `https://brasilapi.com.br/api/cnpj/v1/${cleanCNPJ}`
+      );
+      if (!response.ok) throw new Error("CNPJ não encontrado");
+      const data = await response.json();
+
+      setOrgForm((prev) => ({
+        ...prev,
+        fantasyName: data.nome_fantasia || "",
+        socialReason: data.razao_social || "",
+        cep: data.cep || "",
+        address: data.logradouro || "",
+        number: data.numero || "",
+        neighborhood: data.bairro || "",
+        city: data.municipio || "",
+        state: data.uf || "",
+        complement: data.complemento || "",
+      }));
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao buscar CNPJ. Verifique se está correto.");
+    } finally {
+      setIsLoadingAPI(false);
+    }
+  };
+
+  const fetchCEP = async (cep: string, type: "org" | "ind") => {
+    if (!cep) return;
+    const cleanCEP = cep.replace(/\D/g, "");
+    if (cleanCEP.length !== 8) return;
+
+    setIsLoadingAPI(true);
+    try {
+      const response = await fetch(
+        `https://viacep.com.br/ws/${cleanCEP}/json/`
+      );
+      const data = await response.json();
+
+      if (!data.erro) {
+        if (type === "org") {
+          setOrgForm((prev) => ({
+            ...prev,
+            address: data.logradouro,
+            neighborhood: data.bairro,
+            city: data.localidade,
+            state: data.uf,
+          }));
+        } else {
+          setIndividualForm((prev) => ({
+            ...prev,
+            address: data.logradouro,
+            neighborhood: data.bairro,
+            city: data.localidade,
+            state: data.uf,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingAPI(false);
+    }
+  };
+
+  // --- Handlers for Modals (Create vs Edit) ---
+
+  const handleOpenOrgModal = (org?: Organization) => {
+    if (org) {
+      setEditingId(org.id);
+      setOrgForm(org);
+    } else {
+      setEditingId(null);
+      setOrgForm({});
+    }
+    setIsOrgModalOpen(true);
+  };
+
+  const handleOpenContactModal = (contact?: ContactPerson) => {
+    if (contact) {
+      setEditingId(contact.id);
+      setContactForm(contact);
+    } else {
+      setEditingId(null);
+      setContactForm({});
+    }
+    setIsContactModalOpen(true);
+  };
+
+  const handleOpenIndividualModal = (ind?: IndividualClient) => {
+    if (ind) {
+      setEditingId(ind.id);
+      setIndividualForm(ind);
+    } else {
+      setEditingId(null);
+      setIndividualForm({});
+    }
+    setIsIndividualModalOpen(true);
+  };
+
+  // --- Save Handlers ---
+
   const handleSaveOrg = async () => {
     if (!auth.currentUser) return;
-    await addDoc(
-      collection(
-        db,
-        "artifacts",
-        appId,
-        "users",
-        auth.currentUser.uid,
-        "organizations"
-      ),
-      orgForm
+    if (!orgForm.socialReason) {
+      alert("Razão Social é obrigatória.");
+      return;
+    }
+
+    const collectionRef = collection(
+      db,
+      "artifacts",
+      appId,
+      "users",
+      auth.currentUser.uid,
+      "organizations"
     );
+
+    if (editingId) {
+      await updateDoc(doc(collectionRef, editingId), orgForm);
+    } else {
+      await addDoc(collectionRef, orgForm);
+    }
+
     setIsOrgModalOpen(false);
     setOrgForm({});
+    setEditingId(null);
   };
 
   const handleSaveContact = async () => {
     if (!auth.currentUser) return;
-    // Find org name for display
+
     const org = organizations.find((o) => o.id === contactForm.organizationId);
-    await addDoc(
-      collection(
-        db,
-        "artifacts",
-        appId,
-        "users",
-        auth.currentUser.uid,
-        "contacts"
-      ),
-      {
-        ...contactForm,
-        organizationName: org?.fantasyName || "N/A",
-      }
+    const dataToSave = {
+      ...contactForm,
+      organizationName: org?.fantasyName || org?.socialReason || "N/A",
+    };
+
+    const collectionRef = collection(
+      db,
+      "artifacts",
+      appId,
+      "users",
+      auth.currentUser.uid,
+      "contacts"
     );
+
+    if (editingId) {
+      await updateDoc(doc(collectionRef, editingId), dataToSave);
+    } else {
+      await addDoc(collectionRef, dataToSave);
+    }
+
     setIsContactModalOpen(false);
     setContactForm({});
+    setEditingId(null);
   };
 
   const handleSaveIndividual = async () => {
     if (!auth.currentUser) return;
-    await addDoc(
-      collection(
-        db,
-        "artifacts",
-        appId,
-        "users",
-        auth.currentUser.uid,
-        "individuals"
-      ),
-      individualForm
+    if (!individualForm.name) {
+      alert("Nome é obrigatório.");
+      return;
+    }
+
+    const collectionRef = collection(
+      db,
+      "artifacts",
+      appId,
+      "users",
+      auth.currentUser.uid,
+      "individuals"
     );
+
+    if (editingId) {
+      await updateDoc(doc(collectionRef, editingId), individualForm);
+    } else {
+      await addDoc(collectionRef, individualForm);
+    }
+
     setIsIndividualModalOpen(false);
     setIndividualForm({});
+    setEditingId(null);
   };
 
   const handleDelete = async (collectionName: string, id: string) => {
@@ -209,6 +353,89 @@ const Contacts = () => {
     }
   };
 
+  // --- Import Handlers ---
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImportFile(e.target.files[0]);
+    }
+  };
+
+  const handleImport = () => {
+    if (importFile) {
+      setTimeout(() => {
+        alert(
+          `Arquivo "${importFile.name}" processado com sucesso! (Simulação)`
+        );
+        setIsImportModalOpen(false);
+        setImportFile(null);
+      }, 1000);
+    } else {
+      alert("Por favor, selecione um arquivo.");
+    }
+  };
+
+  // --- Filter Logic (Pesquisa Corrigida e Aprimorada) ---
+  const normalizeText = (text: string) => {
+    return text
+      ? text
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+      : "";
+  };
+
+  const cleanNumber = (text: string) => {
+    return text ? text.replace(/\D/g, "") : "";
+  };
+
+  const normalizedSearch = normalizeText(searchTerm.trim());
+  const cleanSearch = cleanNumber(searchTerm);
+
+  // 1. Filtro Organizações
+  const filteredOrganizations = organizations.filter((org) => {
+    const matchFantasy = normalizeText(org.fantasyName).includes(
+      normalizedSearch
+    );
+    const matchSocial = normalizeText(org.socialReason).includes(
+      normalizedSearch
+    );
+    const matchCNPJ = cleanNumber(org.cnpj).includes(cleanSearch);
+
+    return matchFantasy || matchSocial || (cleanSearch.length > 2 && matchCNPJ);
+  });
+
+  // 2. Filtro Contatos
+  const filteredContacts = contacts.filter((contact) => {
+    const matchName = normalizeText(contact.name).includes(normalizedSearch);
+    const matchOrg = normalizeText(contact.organizationName).includes(
+      normalizedSearch
+    );
+    const matchEmail = normalizeText(contact.email).includes(normalizedSearch);
+    const matchPhone = cleanNumber(contact.phone).includes(cleanSearch);
+
+    return (
+      matchName ||
+      matchOrg ||
+      matchEmail ||
+      (cleanSearch.length > 3 && matchPhone)
+    );
+  });
+
+  // 3. Filtro Clientes PF
+  const filteredIndividuals = individuals.filter((ind) => {
+    const matchName = normalizeText(ind.name).includes(normalizedSearch);
+    const matchEmail = normalizeText(ind.email).includes(normalizedSearch);
+    const matchCPF = cleanNumber(ind.cpf).includes(cleanSearch);
+    const matchPhone = cleanNumber(ind.phone).includes(cleanSearch);
+
+    return (
+      matchName ||
+      matchEmail ||
+      (cleanSearch.length > 2 && matchCPF) ||
+      (cleanSearch.length > 3 && matchPhone)
+    );
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -223,13 +450,16 @@ const Contacts = () => {
             />
             <input
               type="text"
-              placeholder="Pesquisar..."
+              placeholder="Pesquisar (Nome, CPF, CNPJ...)"
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2">
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2 transition"
+          >
             <Upload size={16} /> Importar
           </button>
         </div>
@@ -268,38 +498,51 @@ const Contacts = () => {
                 Organizações
               </h3>
               <button
-                onClick={() => setIsOrgModalOpen(true)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-indigo-700"
+                onClick={() => handleOpenOrgModal()}
+                className="bg-indigo-900 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition"
               >
                 <Plus size={16} /> Novo Organização
               </button>
             </div>
             <div className="space-y-3">
-              {organizations.map((org) => (
-                <div
-                  key={org.id}
-                  className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 flex justify-between items-center group transition"
-                >
-                  <div>
-                    <h4 className="font-bold text-gray-900 dark:text-white uppercase">
-                      {org.fantasyName || org.socialReason}
-                    </h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      CNPJ: {org.cnpj}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleDelete("organizations", org.id)}
-                    className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+              {filteredOrganizations.length > 0 ? (
+                filteredOrganizations.map((org) => (
+                  <div
+                    key={org.id}
+                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 flex justify-between items-center group transition"
                   >
-                    <Trash2 size={18} />
-                  </button>
+                    <div>
+                      <h4 className="font-bold text-gray-900 dark:text-white uppercase">
+                        {org.fantasyName || org.socialReason}
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        CNPJ: {org.cnpj}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                      <button
+                        onClick={() => handleOpenOrgModal(org)}
+                        className="text-gray-400 hover:text-indigo-500 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                        title="Editar"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete("organizations", org.id)}
+                        className="text-gray-400 hover:text-red-500 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                        title="Excluir"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10">
+                  <p className="text-gray-500">
+                    Nenhuma organização encontrada.
+                  </p>
                 </div>
-              ))}
-              {organizations.length === 0 && (
-                <p className="text-center text-gray-500 py-8">
-                  Nenhuma organização cadastrada.
-                </p>
               )}
             </div>
           </div>
@@ -313,44 +556,50 @@ const Contacts = () => {
                 Contatos
               </h3>
               <button
-                onClick={() => setIsContactModalOpen(true)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-indigo-700"
+                onClick={() => handleOpenContactModal()}
+                className="bg-indigo-900 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition"
               >
                 <Plus size={16} /> Novo Contato
               </button>
             </div>
             <div className="space-y-3">
-              {contacts.map((contact) => (
-                <div
-                  key={contact.id}
-                  className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 flex justify-between items-center group transition"
-                >
-                  <div>
-                    <h4 className="font-bold text-gray-900 dark:text-white">
-                      {contact.name}
-                    </h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">
-                      {contact.role || "Cargo não inf."} |{" "}
-                      {contact.organizationName}
-                    </p>
+              {filteredContacts.length > 0 ? (
+                filteredContacts.map((contact) => (
+                  <div
+                    key={contact.id}
+                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 flex justify-between items-center group transition"
+                  >
+                    <div>
+                      <h4 className="font-bold text-gray-900 dark:text-white">
+                        {contact.name}
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                        {contact.role || "Cargo não inf."} |{" "}
+                        {contact.organizationName}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                      <button
+                        onClick={() => handleOpenContactModal(contact)}
+                        className="text-gray-400 hover:text-indigo-500 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                        title="Editar"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete("contacts", contact.id)}
+                        className="text-gray-400 hover:text-red-500 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                        title="Excluir"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                    <button className="text-gray-400 hover:text-indigo-500">
-                      <Edit2 size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete("contacts", contact.id)}
-                      className="text-gray-400 hover:text-red-500"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10">
+                  <p className="text-gray-500">Nenhum contato encontrado.</p>
                 </div>
-              ))}
-              {contacts.length === 0 && (
-                <p className="text-center text-gray-500 py-8">
-                  Nenhum contato cadastrado.
-                </p>
               )}
             </div>
           </div>
@@ -364,38 +613,49 @@ const Contacts = () => {
                 Clientes Pessoa Física
               </h3>
               <button
-                onClick={() => setIsIndividualModalOpen(true)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-indigo-700"
+                onClick={() => handleOpenIndividualModal()}
+                className="bg-indigo-900 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition"
               >
                 <Plus size={16} /> Novo Cliente PF
               </button>
             </div>
             <div className="space-y-3">
-              {individuals.map((ind) => (
-                <div
-                  key={ind.id}
-                  className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 flex justify-between items-center group transition"
-                >
-                  <div>
-                    <h4 className="font-bold text-gray-900 dark:text-white uppercase">
-                      {ind.name}
-                    </h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      CPF: {ind.cpf}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleDelete("individuals", ind.id)}
-                    className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+              {filteredIndividuals.length > 0 ? (
+                filteredIndividuals.map((ind) => (
+                  <div
+                    key={ind.id}
+                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 flex justify-between items-center group transition"
                   >
-                    <Trash2 size={18} />
-                  </button>
+                    <div>
+                      <h4 className="font-bold text-gray-900 dark:text-white uppercase">
+                        {ind.name}
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        CPF: {ind.cpf}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                      <button
+                        onClick={() => handleOpenIndividualModal(ind)}
+                        className="text-gray-400 hover:text-indigo-500 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                        title="Editar"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete("individuals", ind.id)}
+                        className="text-gray-400 hover:text-red-500 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                        title="Excluir"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10">
+                  <p className="text-gray-500">Nenhum cliente PF encontrado.</p>
                 </div>
-              ))}
-              {individuals.length === 0 && (
-                <p className="text-center text-gray-500 py-8">
-                  Nenhum cliente PF cadastrado.
-                </p>
               )}
             </div>
           </div>
@@ -404,12 +664,113 @@ const Contacts = () => {
 
       {/* --- MODALS --- */}
 
+      {/* Modal de Importação */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-xl shadow-2xl p-6 relative animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                Importar Clientes
+              </h3>
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Selecione o ficheiro (.xlsx ou .csv)
+                </label>
+                <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 flex items-center gap-2 bg-white dark:bg-gray-700">
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-500 transition font-medium"
+                  >
+                    Escolher arquivo
+                  </label>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {importFile ? importFile.name : "Nenhum arquivo escolhido"}
+                  </span>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept=".csv, .xlsx"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                <h4 className="font-bold text-gray-800 dark:text-white mb-2 text-sm">
+                  Instruções:
+                </h4>
+                <ul className="list-disc list-inside text-xs text-gray-600 dark:text-gray-300 space-y-1.5">
+                  <li>A primeira linha da planilha deve ser o cabeçalho.</li>
+                  <li>O sistema tentará identificar se a linha é PJ ou PF.</li>
+                  <li>
+                    <strong>Para Organização (PJ):</strong> Use as colunas{" "}
+                    <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded text-gray-800 dark:text-white">
+                      cnpj
+                    </code>{" "}
+                    (obrigatório) e{" "}
+                    <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded text-gray-800 dark:text-white">
+                      nome_fantasia
+                    </code>
+                    .
+                  </li>
+                  <li>
+                    <strong>Para Cliente PF:</strong> Use a coluna{" "}
+                    <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded text-gray-800 dark:text-white">
+                      nome
+                    </code>{" "}
+                    (obrigatório).
+                  </li>
+                  <li>
+                    Colunas opcionais: email, telefone, cep, logradouro, numero,
+                    bairro, cidade, estado.
+                  </li>
+                  <li>
+                    Clientes com CNPJ/CPF, e-mail ou telefone já existentes
+                    serão ignorados.
+                  </li>
+                </ul>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setIsImportModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleImport}
+                  className="px-6 py-2 bg-indigo-900 hover:bg-indigo-800 text-white rounded-lg transition font-medium shadow-sm flex items-center gap-2"
+                >
+                  {isLoadingAPI ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Upload size={16} />
+                  )}
+                  Importar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Nova Organização */}
       {isOrgModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-xl shadow-2xl p-6 relative my-8">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-xl shadow-2xl p-6 relative my-8 animate-in fade-in zoom-in-95 duration-200">
             <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">
-              Nova Organização
+              {editingId ? "Editar Organização" : "Nova Organização"}
             </h3>
             <button
               onClick={() => setIsOrgModalOpen(false)}
@@ -425,41 +786,50 @@ const Contacts = () => {
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white pl-3 pr-10"
                     placeholder="00.000.000/0000-00"
-                    value={orgForm.cnpj}
+                    value={orgForm.cnpj || ""}
                     onChange={(e) =>
                       setOrgForm({ ...orgForm, cnpj: e.target.value })
                     }
                   />
-                  <Search
-                    size={16}
-                    className="absolute right-3 top-3 text-indigo-600 cursor-pointer"
-                  />
+                  <button
+                    onClick={() => fetchCNPJ(orgForm.cnpj || "")}
+                    className="absolute right-2 top-2 text-indigo-600 hover:text-indigo-800 transition"
+                    title="Pesquisar CNPJ"
+                  >
+                    {isLoadingAPI ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Search size={18} />
+                    )}
+                  </button>
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nome Fantasia*
+                  Nome Fantasia
                 </label>
                 <input
                   className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={orgForm.fantasyName}
+                  value={orgForm.fantasyName || ""}
                   onChange={(e) =>
                     setOrgForm({ ...orgForm, fantasyName: e.target.value })
                   }
+                  placeholder="Não é obrigatório"
                 />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Razão Social
+                  Razão Social*
                 </label>
                 <input
                   className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={orgForm.socialReason}
+                  value={orgForm.socialReason || ""}
                   onChange={(e) =>
                     setOrgForm({ ...orgForm, socialReason: e.target.value })
                   }
+                  placeholder="É obrigatório"
                 />
               </div>
 
@@ -470,16 +840,22 @@ const Contacts = () => {
                   </label>
                   <div className="relative">
                     <input
-                      className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      value={orgForm.cep}
+                      className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white pl-3 pr-10"
+                      value={orgForm.cep || ""}
                       onChange={(e) =>
                         setOrgForm({ ...orgForm, cep: e.target.value })
                       }
                     />
-                    <Search
-                      size={16}
-                      className="absolute right-3 top-3 text-indigo-600 cursor-pointer"
-                    />
+                    <button
+                      onClick={() => fetchCEP(orgForm.cep || "", "org")}
+                      className="absolute right-2 top-2 text-indigo-600 hover:text-indigo-800 transition"
+                    >
+                      {isLoadingAPI ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <Search size={18} />
+                      )}
+                    </button>
                   </div>
                 </div>
                 <div className="col-span-2">
@@ -488,7 +864,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={orgForm.address}
+                    value={orgForm.address || ""}
                     onChange={(e) =>
                       setOrgForm({ ...orgForm, address: e.target.value })
                     }
@@ -503,7 +879,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={orgForm.number}
+                    value={orgForm.number || ""}
                     onChange={(e) =>
                       setOrgForm({ ...orgForm, number: e.target.value })
                     }
@@ -515,7 +891,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={orgForm.complement}
+                    value={orgForm.complement || ""}
                     onChange={(e) =>
                       setOrgForm({ ...orgForm, complement: e.target.value })
                     }
@@ -527,7 +903,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={orgForm.neighborhood}
+                    value={orgForm.neighborhood || ""}
                     onChange={(e) =>
                       setOrgForm({ ...orgForm, neighborhood: e.target.value })
                     }
@@ -542,7 +918,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={orgForm.city}
+                    value={orgForm.city || ""}
                     onChange={(e) =>
                       setOrgForm({ ...orgForm, city: e.target.value })
                     }
@@ -554,7 +930,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={orgForm.state}
+                    value={orgForm.state || ""}
                     onChange={(e) =>
                       setOrgForm({ ...orgForm, state: e.target.value })
                     }
@@ -563,7 +939,7 @@ const Contacts = () => {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-8">
+            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setIsOrgModalOpen(false)}
                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -572,9 +948,9 @@ const Contacts = () => {
               </button>
               <button
                 onClick={handleSaveOrg}
-                className="px-6 py-2 bg-indigo-900 text-white rounded-lg hover:bg-indigo-800"
+                className="px-6 py-2 bg-indigo-900 text-white rounded-lg hover:bg-indigo-800 transition shadow-sm"
               >
-                Adicionar
+                {editingId ? "Salvar Alterações" : "Adicionar"}
               </button>
             </div>
           </div>
@@ -584,9 +960,9 @@ const Contacts = () => {
       {/* Modal Novo Contato */}
       {isContactModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-xl shadow-2xl p-6 relative">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-xl shadow-2xl p-6 relative animate-in fade-in zoom-in-95 duration-200">
             <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">
-              Novo Contato
+              {editingId ? "Editar Contato" : "Novo Contato"}
             </h3>
             <button
               onClick={() => setIsContactModalOpen(false)}
@@ -602,7 +978,7 @@ const Contacts = () => {
                 </label>
                 <select
                   className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={contactForm.organizationId}
+                  value={contactForm.organizationId || ""}
                   onChange={(e) =>
                     setContactForm({
                       ...contactForm,
@@ -613,7 +989,7 @@ const Contacts = () => {
                   <option value="">Selecione...</option>
                   {organizations.map((org) => (
                     <option key={org.id} value={org.id}>
-                      {org.fantasyName}
+                      {org.fantasyName || org.socialReason}
                     </option>
                   ))}
                 </select>
@@ -625,7 +1001,7 @@ const Contacts = () => {
                 </label>
                 <input
                   className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={contactForm.name}
+                  value={contactForm.name || ""}
                   onChange={(e) =>
                     setContactForm({ ...contactForm, name: e.target.value })
                   }
@@ -639,7 +1015,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={contactForm.role}
+                    value={contactForm.role || ""}
                     onChange={(e) =>
                       setContactForm({ ...contactForm, role: e.target.value })
                     }
@@ -651,7 +1027,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={contactForm.sector}
+                    value={contactForm.sector || ""}
                     onChange={(e) =>
                       setContactForm({ ...contactForm, sector: e.target.value })
                     }
@@ -666,7 +1042,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={contactForm.email}
+                    value={contactForm.email || ""}
                     onChange={(e) =>
                       setContactForm({ ...contactForm, email: e.target.value })
                     }
@@ -678,7 +1054,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={contactForm.phone}
+                    value={contactForm.phone || ""}
                     onChange={(e) =>
                       setContactForm({ ...contactForm, phone: e.target.value })
                     }
@@ -687,7 +1063,7 @@ const Contacts = () => {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-8">
+            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setIsContactModalOpen(false)}
                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -696,9 +1072,9 @@ const Contacts = () => {
               </button>
               <button
                 onClick={handleSaveContact}
-                className="px-6 py-2 bg-indigo-900 text-white rounded-lg hover:bg-indigo-800"
+                className="px-6 py-2 bg-indigo-900 text-white rounded-lg hover:bg-indigo-800 transition shadow-sm"
               >
-                Adicionar
+                {editingId ? "Salvar Alterações" : "Adicionar"}
               </button>
             </div>
           </div>
@@ -708,9 +1084,9 @@ const Contacts = () => {
       {/* Modal Novo Cliente PF */}
       {isIndividualModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-xl shadow-2xl p-6 relative my-8">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-xl shadow-2xl p-6 relative my-8 animate-in fade-in zoom-in-95 duration-200">
             <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">
-              Novo Cliente PF
+              {editingId ? "Editar Cliente PF" : "Novo Cliente PF"}
             </h3>
             <button
               onClick={() => setIsIndividualModalOpen(false)}
@@ -726,7 +1102,7 @@ const Contacts = () => {
                 </label>
                 <input
                   className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={individualForm.name}
+                  value={individualForm.name || ""}
                   onChange={(e) =>
                     setIndividualForm({
                       ...individualForm,
@@ -743,7 +1119,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={individualForm.email}
+                    value={individualForm.email || ""}
                     onChange={(e) =>
                       setIndividualForm({
                         ...individualForm,
@@ -758,7 +1134,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={individualForm.phone}
+                    value={individualForm.phone || ""}
                     onChange={(e) =>
                       setIndividualForm({
                         ...individualForm,
@@ -776,7 +1152,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={individualForm.cpf}
+                    value={individualForm.cpf || ""}
                     onChange={(e) =>
                       setIndividualForm({
                         ...individualForm,
@@ -792,7 +1168,7 @@ const Contacts = () => {
                   <input
                     type="date"
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={individualForm.birthDate}
+                    value={individualForm.birthDate || ""}
                     onChange={(e) =>
                       setIndividualForm({
                         ...individualForm,
@@ -803,7 +1179,7 @@ const Contacts = () => {
                 </div>
               </div>
 
-              {/* Endereço PF (Simplificado para caber no exemplo, mas segue a lógica do Org) */}
+              {/* Endereço PF */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-1">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -811,8 +1187,8 @@ const Contacts = () => {
                   </label>
                   <div className="relative">
                     <input
-                      className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      value={individualForm.cep}
+                      className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white pl-3 pr-10"
+                      value={individualForm.cep || ""}
                       onChange={(e) =>
                         setIndividualForm({
                           ...individualForm,
@@ -820,10 +1196,16 @@ const Contacts = () => {
                         })
                       }
                     />
-                    <Search
-                      size={16}
-                      className="absolute right-3 top-3 text-indigo-600"
-                    />
+                    <button
+                      onClick={() => fetchCEP(individualForm.cep || "", "ind")}
+                      className="absolute right-2 top-2 text-indigo-600 hover:text-indigo-800 transition"
+                    >
+                      {isLoadingAPI ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <Search size={18} />
+                      )}
+                    </button>
                   </div>
                 </div>
                 <div className="col-span-2">
@@ -832,7 +1214,7 @@ const Contacts = () => {
                   </label>
                   <input
                     className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={individualForm.address}
+                    value={individualForm.address || ""}
                     onChange={(e) =>
                       setIndividualForm({
                         ...individualForm,
@@ -842,9 +1224,90 @@ const Contacts = () => {
                   />
                 </div>
               </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Número
+                  </label>
+                  <input
+                    className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    value={individualForm.number || ""}
+                    onChange={(e) =>
+                      setIndividualForm({
+                        ...individualForm,
+                        number: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Complemento
+                  </label>
+                  <input
+                    className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    value={individualForm.complement || ""}
+                    onChange={(e) =>
+                      setIndividualForm({
+                        ...individualForm,
+                        complement: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Bairro
+                  </label>
+                  <input
+                    className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    value={individualForm.neighborhood || ""}
+                    onChange={(e) =>
+                      setIndividualForm({
+                        ...individualForm,
+                        neighborhood: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Cidade
+                  </label>
+                  <input
+                    className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    value={individualForm.city || ""}
+                    onChange={(e) =>
+                      setIndividualForm({
+                        ...individualForm,
+                        city: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Estado (UF)
+                  </label>
+                  <input
+                    className="w-full border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    value={individualForm.state || ""}
+                    onChange={(e) =>
+                      setIndividualForm({
+                        ...individualForm,
+                        state: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-8">
+            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setIsIndividualModalOpen(false)}
                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -853,9 +1316,9 @@ const Contacts = () => {
               </button>
               <button
                 onClick={handleSaveIndividual}
-                className="px-6 py-2 bg-indigo-900 text-white rounded-lg hover:bg-indigo-800"
+                className="px-6 py-2 bg-indigo-900 text-white rounded-lg hover:bg-indigo-800 transition shadow-sm"
               >
-                Adicionar
+                {editingId ? "Salvar Alterações" : "Adicionar"}
               </button>
             </div>
           </div>

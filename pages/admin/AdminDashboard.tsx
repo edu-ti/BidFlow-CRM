@@ -5,17 +5,12 @@ import {
   Building2,
   Server,
   AlertCircle,
-  TrendingUp,
-  Users,
-  MessageSquare,
   Clock,
   Loader2,
 } from "lucide-react";
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -29,139 +24,134 @@ import {
 import { db, appId } from "../../lib/firebase";
 import { collection, onSnapshot, query } from "firebase/firestore";
 
-// Dados mockados para gráficos (histórico complexo geralmente requer agregação no backend)
-const revenueData = [
-  { name: "Mai", value: 45000 },
-  { name: "Jun", value: 52000 },
-  { name: "Jul", value: 48000 },
-  { name: "Ago", value: 61000 },
-  { name: "Set", value: 58000 },
-  { name: "Out", value: 72000 },
-];
-
-const newClientsData = [
-  { name: "Mai", value: 12 },
-  { name: "Jun", value: 15 },
-  { name: "Jul", value: 10 },
-  { name: "Ago", value: 22 },
-  { name: "Set", value: 18 },
-  { name: "Out", value: 25 },
-];
-
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
     mrr: 0,
     activeClients: 0,
     trialClients: 0,
     overdueClients: 0,
-    totalMessages: 1200000, // Mockado por enquanto (caro para contar em tempo real)
-    instances: 798, // Mockado
+    instances: 0,
   });
-  const [planDistribution, setPlanDistribution] = useState<any[]>([]);
-  const [recentLogs, setRecentLogs] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  // --- LÓGICA DE TEMA PARA GRÁFICOS ---
-  const [isDark, setIsDark] = useState(
-    document.documentElement.classList.contains("dark")
-  );
 
+  const [planDistribution, setPlanDistribution] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isDark, setIsDark] = useState(false);
+
+  // Check dark mode
   useEffect(() => {
-    // Observa mudanças na classe 'dark' no elemento <html>
-    const observer = new MutationObserver(() => {
+    if (typeof document !== "undefined") {
       setIsDark(document.documentElement.classList.contains("dark"));
-    });
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-    return () => observer.disconnect();
+      const observer = new MutationObserver(() => {
+        setIsDark(document.documentElement.classList.contains("dark"));
+      });
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+      return () => observer.disconnect();
+    }
   }, []);
 
-  // Cores dinâmicas baseadas no tema
   const chartTheme = {
-    grid: isDark ? "#374151" : "#e2e8f0", // dark:border-gray-700 vs gray-200
-    text: isDark ? "#9ca3af" : "#64748b", // dark:text-gray-400 vs text-gray-500
-    tooltipBg: isDark ? "#1f2937" : "#ffffff", // dark:bg-gray-800 vs white
+    grid: isDark ? "#374151" : "#e2e8f0",
+    text: isDark ? "#9ca3af" : "#64748b",
+    tooltipBg: isDark ? "#1f2937" : "#ffffff",
     tooltipBorder: isDark ? "#374151" : "#e2e8f0",
     tooltipText: isDark ? "#f3f4f6" : "#1e293b",
-    cursor: isDark ? "#374151" : "#f1f5f9",
   };
-  // -------------------------------------
 
   useEffect(() => {
-    // Buscar empresas para calcular métricas
-    const q = query(collection(db, "artifacts", appId, "companies"));
+    try {
+      const companiesRef = collection(db, "artifacts", appId, "companies");
+      const q = query(companiesRef);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let mrr = 0;
-      let active = 0;
-      let trial = 0;
-      let overdue = 0;
-      const plans: Record<string, number> = {
-        Starter: 0,
-        Pro: 0,
-        Enterprise: 0,
-      };
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          try {
+            let mrr = 0;
+            let active = 0;
+            let trial = 0;
+            let overdue = 0;
+            const plans: Record<string, number> = {
+              Starter: 0,
+              Pro: 0,
+              Enterprise: 0,
+            };
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
+            snapshot.forEach((doc) => {
+              const data = doc.data();
+              if (data.status === "active") active++;
+              if (data.status === "trial") trial++;
+              if (data.status === "overdue") overdue++;
 
-        // Contagem por Status
-        if (data.status === "active") active++;
-        if (data.status === "trial") trial++;
-        if (data.status === "overdue") overdue++;
+              let price = 0;
+              if (typeof data.mrr === "number") {
+                price = data.mrr;
+              } else if (typeof data.mrr === "string") {
+                const clean = data.mrr.replace(/[^\d,]/g, "").replace(",", ".");
+                price = parseFloat(clean) || 0;
+              }
 
-        // Cálculo de MRR (Receita Mensal Recorrente)
-        // Removemos símbolos de moeda se existirem e convertemos para número
-        const price =
-          typeof data.mrr === "string"
-            ? parseFloat(
-                data.mrr
-                  .replace("R$", "")
-                  .replace(".", "")
-                  .replace(",", ".")
-                  .trim()
-              )
-            : data.mrr || 0;
+              if (data.status === "active") {
+                mrr += price;
+              }
 
-        if (data.status === "active") {
-          mrr += price;
+              const planName = data.plan || "Starter";
+              plans[planName] = (plans[planName] || 0) + 1;
+            });
+
+            const pieData = Object.keys(plans)
+              .map((key) => ({
+                name: key,
+                value: plans[key],
+                color:
+                  key === "Enterprise"
+                    ? "#10b981"
+                    : key === "Pro"
+                    ? "#6366f1"
+                    : "#94a3b8",
+              }))
+              .filter((i) => i.value > 0);
+
+            setStats((prev) => ({
+              ...prev,
+              mrr,
+              activeClients: active,
+              trialClients: trial,
+              overdueClients: overdue,
+              instances: active,
+            }));
+
+            setPlanDistribution(
+              pieData.length > 0
+                ? pieData
+                : [{ name: "Sem dados", value: 1, color: "#e2e8f0" }]
+            );
+            setIsLoading(false);
+          } catch (err) {
+            console.error("Erro de processamento:", err);
+            setIsLoading(false);
+          }
+        },
+        (err) => {
+          console.error("Erro Firestore:", err);
+          setError("Falha na conexão.");
+          setIsLoading(false);
         }
+      );
 
-        // Distribuição de Planos
-        const planName = data.plan || "Starter";
-        if (plans[planName] !== undefined) {
-          plans[planName]++;
-        } else {
-          plans[planName] = 1;
-        }
-      });
-
-      // Formatar dados para o gráfico de pizza
-      const chartData = [
-        { name: "Starter", value: plans.Starter, color: "#94a3b8" },
-        { name: "Pro", value: plans.Pro, color: "#6366f1" },
-        { name: "Enterprise", value: plans.Enterprise, color: "#10b981" },
-      ].filter((item) => item.value > 0);
-
-      setStats((prev) => ({
-        ...prev,
-        mrr,
-        activeClients: active,
-        trialClients: trial,
-        overdueClients: overdue,
-      }));
-      setPlanDistribution(chartData);
+      return () => unsubscribe();
+    } catch (e) {
       setIsLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+      <div className="flex justify-center items-center h-96">
+        <Loader2 className="animate-spin text-indigo-600" size={32} />
       </div>
     );
   }
@@ -173,122 +163,101 @@ const AdminDashboard = () => {
           Dashboard Master
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Visão geral de toda a operação do SaaS.
+          Visão geral da operação.
         </p>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title="MRR (Receita)"
+          title="MRR (Receita Mensal)"
           value={stats.mrr.toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL",
           })}
-          change="+12.5%"
           icon={DollarSign}
           trend="up"
+          change="Recorrente"
         />
         <StatCard
           title="Clientes Ativos"
-          value={stats.activeClients}
-          change="+25"
+          value={stats.activeClients.toString()}
           icon={Building2}
           trend="up"
         />
         <StatCard
-          title="Em Teste (Trial)"
-          value={stats.trialClients}
-          change="+12"
+          title="Em Trial"
+          value={stats.trialClients.toString()}
           icon={Clock}
           trend="neutral"
         />
         <StatCard
           title="Inadimplentes"
-          value={stats.overdueClients}
-          change="-2"
+          value={stats.overdueClients.toString()}
           icon={AlertCircle}
-          trend="down"
-        />
-        <StatCard
-          title="Instâncias WA"
-          value={stats.instances}
-          change="94.7%"
-          icon={Server}
-          trend="neutral"
-        />
-        <StatCard
-          title="Mensagens Hoje"
-          value="1.2M"
-          change="+5.2%"
-          icon={MessageSquare}
-          trend="up"
+          trend={stats.overdueClients > 0 ? "down" : "neutral"}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
-            Crescimento de Receita (Simulado)
+            Receita (Simulado)
           </h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={revenueData}>
+              <LineChart
+                data={[
+                  { name: "Jan", value: stats.mrr * 0.8 },
+                  { name: "Fev", value: stats.mrr * 0.9 },
+                  { name: "Mar", value: stats.mrr },
+                ]}
+              >
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke={chartTheme.grid} // Cor dinâmica da grade
+                  stroke={chartTheme.grid}
                 />
                 <XAxis
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: chartTheme.text }} // Cor dinâmica do texto X
+                  tick={{ fill: chartTheme.text }}
                   dy={10}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: chartTheme.text }} // Cor dinâmica do texto Y
-                  tickFormatter={(value) => `R$ ${value / 1000}k`}
+                  tick={{ fill: chartTheme.text }}
+                  tickFormatter={(v) => `R$${v}`}
                 />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: chartTheme.tooltipBg,
                     borderColor: chartTheme.tooltipBorder,
                     color: chartTheme.tooltipText,
-                    borderRadius: "8px",
                   }}
-                  formatter={(value) => [`R$ ${value}`, "Receita"]}
                 />
                 <Line
                   type="monotone"
                   dataKey="value"
                   stroke="#6C63FF"
                   strokeWidth={3}
-                  dot={{ r: 4, fill: "#6C63FF" }}
-                  activeDot={{ r: 6 }}
+                  dot={{ r: 4 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Plan Distribution */}
-        <div className="bbg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
-            Distribuição de Planos
+            Planos
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={
-                    planDistribution.length > 0
-                      ? planDistribution
-                      : [{ name: "Sem dados", value: 1, color: "#e2e8f0" }]
-                  }
+                  data={planDistribution}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -296,10 +265,7 @@ const AdminDashboard = () => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {(planDistribution.length > 0
-                    ? planDistribution
-                    : [{ name: "Sem dados", value: 1, color: "#e2e8f0" }]
-                  ).map((entry, index) => (
+                  {planDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -308,89 +274,12 @@ const AdminDashboard = () => {
                     backgroundColor: chartTheme.tooltipBg,
                     borderColor: chartTheme.tooltipBorder,
                     color: chartTheme.tooltipText,
-                    borderRadius: "8px",
                   }}
                 />
-                <Legend verticalAlign="bottom" height={36} />
+                <Legend verticalAlign="bottom" />
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* New Clients Bar Chart */}
-        <div className="llg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-all">
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6 transition-colors">
-            Novos Clientes (Simulado)
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={newClientsData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke={chartTheme.grid} // Cor dinâmica
-                />
-                <XAxis
-                  dataKey="name"
-                  axisLine={false}
-                  tickLine={false}
-                  stroke={chartTheme.grid} // Cor dinâmica
-                  dy={10}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: chartTheme.text }} // Cor dinâmica
-                />
-                <Tooltip
-                  cursor={{ fill: chartTheme.cursor }} // Cor dinâmica do cursor
-                  contentStyle={{
-                    backgroundColor: chartTheme.tooltipBg,
-                    borderColor: chartTheme.tooltipBorder,
-                    color: chartTheme.tooltipText,
-                    borderRadius: "8px",
-                  }}
-                />
-                <Bar
-                  dataKey="value"
-                  fill="#6C63FF"
-                  radius={[4, 4, 0, 0]}
-                  barSize={40}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Recent Logs */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
-            Atividade Recente
-          </h3>
-          <div className="space-y-4">
-            {/* Logs estáticos por enquanto, idealmente viriam de uma coleção 'logs' */}
-            <div className="flex items-start gap-3 pb-3 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
-              <div className="p-2 rounded-full mt-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
-                <AlertCircle size={14} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                  Login de Admin
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Sistema • Master
-                </p>
-                <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                  Agora mesmo
-                </span>
-              </div>
-            </div>
-          </div>
-          <button className="w-full mt-4 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition">
-            Ver todos os logs
-          </button>
         </div>
       </div>
     </div>
