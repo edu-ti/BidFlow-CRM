@@ -54,6 +54,8 @@ import {
   getDocs,
   doc,
   getDoc,
+  limit,
+  addDoc,
 } from "firebase/firestore";
 
 // Public Pages
@@ -476,6 +478,53 @@ const App = () => {
             return;
           }
 
+          // --- FIX: Regra Hardcoded para Admin Principal ---
+          // Isso garante que seu email específico sempre seja Admin, mesmo que o banco esteja vazio ou incompleto.
+          if (currentUser.email === "admin@bidflow.com") {
+            console.log("Admin Master detectado. Concedendo acesso...");
+
+            // Verifica se existe na coleção 'team' para consistência, se não, cria.
+            const teamQuery = query(
+              collection(db, "artifacts", appId, "team"),
+              where("email", "==", currentUser.email)
+            );
+            const teamSnap = await getDocs(teamQuery);
+
+            if (teamSnap.empty) {
+              console.log("Criando registro de Admin na coleção team...");
+              await addDoc(collection(db, "artifacts", appId, "team"), {
+                name: currentUser.displayName || "Master Admin",
+                email: currentUser.email,
+                role: "superadmin",
+                permissions: {
+                  finance: true,
+                  support: true,
+                  tech: true,
+                  sales: true,
+                },
+                status: "active",
+                createdAt: new Date().toISOString(),
+              });
+            }
+
+            setAdminPermissions({
+              superadmin: true,
+              finance: true,
+              support: true,
+              tech: true,
+              sales: true,
+            });
+            setUserProfile({
+              name: "Master Admin",
+              email: currentUser.email,
+              avatar: `https://ui-avatars.com/api/?name=Master+Admin&background=6C63FF&color=fff`,
+            });
+            setRole("SUPERADMIN");
+            return;
+          }
+          // --- FIM DO FIX ---
+
+          // 1. Verificar se é membro da equipe (Admin Geral)
           const teamQuery = query(
             collection(db, "artifacts", appId, "team"),
             where("email", "==", currentUser.email)
@@ -498,8 +547,51 @@ const App = () => {
             });
             setRole("SUPERADMIN");
             return;
+          } else {
+            // 2. Fallback: Se a coleção 'team' estiver VAZIA, promove o primeiro usuário a Superadmin
+            const allTeamQuery = query(
+              collection(db, "artifacts", appId, "team"),
+              limit(1)
+            );
+            const allTeamSnap = await getDocs(allTeamQuery);
+
+            if (allTeamSnap.empty) {
+              console.log(
+                "Sistema sem admins. Promovendo primeiro usuário a Superadmin..."
+              );
+              // Cria o primeiro admin automaticamente
+              await addDoc(collection(db, "artifacts", appId, "team"), {
+                name: currentUser.displayName || "Master Admin",
+                email: currentUser.email,
+                role: "superadmin",
+                permissions: {
+                  finance: true,
+                  support: true,
+                  tech: true,
+                  sales: true,
+                },
+                status: "active",
+                createdAt: new Date().toISOString(),
+              });
+
+              setAdminPermissions({
+                superadmin: true,
+                finance: true,
+                support: true,
+                tech: true,
+                sales: true,
+              });
+              setUserProfile({
+                name: currentUser.displayName || "Master Admin",
+                email: currentUser.email,
+                avatar: `https://ui-avatars.com/api/?name=Master+Admin&background=6C63FF&color=fff`,
+              });
+              setRole("SUPERADMIN");
+              return;
+            }
           }
 
+          // Se não for admin, é cliente normal
           setRole("CLIENT");
           setUserProfile({
             name:
@@ -571,8 +663,10 @@ const App = () => {
           element={
             role === "GUEST" ? (
               <AdminLogin />
-            ) : (
+            ) : role === "SUPERADMIN" ? (
               <Navigate to="/admin/dashboard" />
+            ) : (
+              <Navigate to="/app/dashboard" />
             )
           }
         />
