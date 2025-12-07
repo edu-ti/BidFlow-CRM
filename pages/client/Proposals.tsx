@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Search,
@@ -8,85 +8,419 @@ import {
   ChevronRight,
   X,
   BookOpen,
-  Plus as PlusIcon,
+  Loader2,
+  Trash2,
+  FileText,
+  Upload,
+  Image as ImageIcon,
 } from "lucide-react";
+import { db, auth, appId } from "../../lib/firebase";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy,
+} from "firebase/firestore";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
+
+// --- Interfaces ---
+
+interface ProposalItemParam {
+  name: string;
+  value: string;
+}
+
+interface ProposalItem {
+  id: string;
+  description: string;
+  manufacturer: string;
+  model: string;
+  status: "Venda" | "Locação";
+  image?: string;
+  detailedDescription: string;
+  params: ProposalItemParam[];
+  quantity: number;
+  unitPrice: number;
+  unit: string;
+}
+
+interface ProposalTerms {
+  payment: string;
+  delivery: string;
+  training: string;
+  billing: string;
+  warrantyEquipment: string;
+  warrantyAccessories: string;
+  installation: string;
+  technicalAssistance: string;
+  notes: string;
+}
 
 interface Proposal {
   id: string;
   number: string;
   date: string;
+  validity: string;
   client: string;
   contact: string;
   document: string;
   value: number;
-  status: "Rascunho" | "Enviada" | "Aceita" | "Rejeitada";
+  status: "Rascunho" | "Enviada" | "Aprovada" | "Recusada" | "Negociando";
   stage: string;
+  clientType: "PJ" | "PF";
+  items: ProposalItem[];
+  terms: ProposalTerms;
+  createdAt: string;
 }
 
-const mockProposals: Proposal[] = [
-  {
-    id: "1",
-    number: "024/2025",
-    date: "04/12/2025",
-    client: "CASA DE SAUDE E MATERNIDADE DE CORURIPE",
-    contact: "N/A",
-    document: "35.642.172/0001-43",
-    value: 2067000.0,
-    status: "Rascunho",
-    stage: "Proposta",
-  },
-  {
-    id: "2",
-    number: "023/2025",
-    date: "04/12/2025",
-    client: "CASA DE SAUDE E MATERNIDADE DE CORURIPE",
-    contact: "N/A",
-    document: "35.642.172/0001-43",
-    value: 168000.0,
-    status: "Rascunho",
-    stage: "Proposta",
-  },
-];
-
 const Proposals = () => {
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
-  // Estados do Formulário de Criação
-  const [activeStep, setActiveStep] = useState(1); // 1 = Dados, 2 = Itens, 3 = Termos (tudo na mesma tela no print, mas separado logico)
+  // Paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "Rascunho":
-        return "bg-gray-200 text-gray-700";
-      case "Enviada":
-        return "bg-blue-100 text-blue-700";
-      case "Aceita":
-        return "bg-green-100 text-green-700";
-      case "Rejeitada":
-        return "bg-red-100 text-red-700";
-      default:
-        return "bg-gray-100 text-gray-600";
+  // Estado de Edição/Criação
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Estado do Formulário Principal com Defaults do arquivo proposals.js
+  const [formData, setFormData] = useState<Partial<Proposal>>({
+    number: "",
+    date: new Date().toISOString().split("T")[0],
+    validity: "",
+    client: "",
+    contact: "",
+    document: "",
+    value: 0,
+    status: "Rascunho",
+    stage: "Proposta",
+    clientType: "PJ",
+    items: [],
+    terms: {
+      billing: "Realizado diretamente pela fábrica.",
+      training: "Capacitação técnica por especialistas da FR Produtos Médicos.",
+      payment: "A vista",
+      delivery: "Até 30 dias após a confirmação do pedido de compra.",
+      warrantyEquipment: "12 meses a partir da data de emissão da nota Fiscal.",
+      warrantyAccessories: "6 meses, conforme especificações do fabricante.",
+      installation:
+        "Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.",
+      technicalAssistance:
+        "Disponível com suporte especializado para manutenção e pós garantia.",
+      notes: "Nenhuma",
+    },
+  });
+
+  // Estado do Item sendo editado/adicionado
+  const [currentItem, setCurrentItem] = useState<ProposalItem>({
+    id: "",
+    description: "",
+    manufacturer: "",
+    model: "",
+    status: "Venda",
+    detailedDescription: "",
+    params: [],
+    quantity: 1,
+    unitPrice: 0,
+    unit: "Unidade",
+    image: "",
+  });
+
+  // Estado para novo parâmetro do item
+  const [newParam, setNewParam] = useState({ name: "", value: "" });
+
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Confirmação
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    type: ConfirmModalType;
+    onConfirm?: () => void;
+    confirmText?: string;
+    showCancel?: boolean;
+  }>({
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  // 1. Carregar Propostas
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const q = query(
+      collection(
+        db,
+        "artifacts",
+        appId,
+        "users",
+        auth.currentUser.uid,
+        "proposals"
+      ),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedProposals = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Proposal[];
+      setProposals(fetchedProposals);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // --- Função de Cálculo de Total (Baseada no PHP) ---
+  const calculateTotal = (items: ProposalItem[]) => {
+    return items.reduce((acc, item) => {
+      // Regra do PHP: Se for locação, multiplica por 24 (meses presumidos de contrato)
+      const multiplier = item.status === "Locação" ? 24 : 1;
+      return acc + item.quantity * item.unitPrice * multiplier;
+    }, 0);
+  };
+
+  // --- Handlers do Item Atual ---
+
+  const handleAddItemParam = () => {
+    if (newParam.name && newParam.value) {
+      setCurrentItem((prev) => ({
+        ...prev,
+        params: [...prev.params, newParam],
+      }));
+      setNewParam({ name: "", value: "" });
     }
+  };
+
+  const handleRemoveItemParam = (index: number) => {
+    setCurrentItem((prev) => ({
+      ...prev,
+      params: prev.params.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const url = URL.createObjectURL(e.target.files[0]);
+      setCurrentItem((prev) => ({ ...prev, image: url }));
+    }
+  };
+
+  const handleAddItemToProposal = () => {
+    if (!currentItem.description) {
+      alert("A descrição do item é obrigatória.");
+      return;
+    }
+
+    const newItem = { ...currentItem, id: Date.now().toString() };
+    const updatedItems = [...(formData.items || []), newItem];
+
+    // Recalcula o valor total usando a lógica de multiplicador
+    const totalValue = calculateTotal(updatedItems);
+
+    setFormData((prev) => ({
+      ...prev,
+      items: updatedItems,
+      value: totalValue,
+    }));
+
+    // Reseta o item atual
+    setCurrentItem({
+      id: "",
+      description: "",
+      manufacturer: "",
+      model: "",
+      status: "Venda",
+      detailedDescription: "",
+      params: [],
+      quantity: 1,
+      unitPrice: 0,
+      unit: "Unidade",
+      image: "",
+    });
+  };
+
+  const handleRemoveItemFromProposal = (index: number) => {
+    const updatedItems = (formData.items || []).filter((_, i) => i !== index);
+    const totalValue = calculateTotal(updatedItems);
+
+    setFormData((prev) => ({
+      ...prev,
+      items: updatedItems,
+      value: totalValue,
+    }));
+  };
+
+  // --- Handlers Principais ---
+
+  const handleOpenCreate = (proposal?: Proposal) => {
+    if (proposal) {
+      setEditingId(proposal.id);
+      setFormData({ ...proposal });
+    } else {
+      setEditingId(null);
+      const year = new Date().getFullYear();
+      const randomNum = Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, "0");
+
+      // Defaults exatos do proposals.js
+      setFormData({
+        number: `${randomNum}/${year}`,
+        date: new Date().toISOString().split("T")[0],
+        validity: "",
+        client: "",
+        contact: "",
+        document: "",
+        value: 0,
+        status: "Rascunho",
+        stage: "Proposta",
+        clientType: "PJ",
+        items: [],
+        terms: {
+          billing: "Realizado diretamente pela fábrica.",
+          training:
+            "Capacitação técnica por especialistas da FR Produtos Médicos.",
+          payment: "A vista",
+          delivery: "Até 30 dias após a confirmação do pedido de compra.",
+          warrantyEquipment:
+            "12 meses a partir da data de emissão da nota Fiscal.",
+          warrantyAccessories:
+            "6 meses, conforme especificações do fabricante.",
+          installation:
+            "Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.",
+          technicalAssistance:
+            "Disponível com suporte especializado para manutenção e pós garantia.",
+          notes: "Nenhuma",
+        },
+      });
+    }
+    setIsCreating(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.client || !auth.currentUser) {
+      alert("Preencha o cliente.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const collectionRef = collection(
+        db,
+        "artifacts",
+        appId,
+        "users",
+        auth.currentUser.uid,
+        "proposals"
+      );
+
+      const payload = {
+        ...formData,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (editingId) {
+        await updateDoc(doc(collectionRef, editingId), payload);
+      } else {
+        await addDoc(collectionRef, {
+          ...payload,
+          createdAt: new Date().toISOString(),
+        });
+      }
+      setIsCreating(false);
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      alert("Erro ao salvar. Tente novamente.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    setConfirmConfig({
+      title: "Excluir Proposta",
+      message: "Tem certeza que deseja excluir esta proposta?",
+      type: "error",
+      confirmText: "Excluir",
+      showCancel: true,
+      onConfirm: async () => {
+        if (!auth.currentUser) return;
+        try {
+          await deleteDoc(
+            doc(
+              db,
+              "artifacts",
+              appId,
+              "users",
+              auth.currentUser.uid,
+              "proposals",
+              id
+            )
+          );
+        } catch (error) {
+          console.error("Erro ao excluir:", error);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
+  };
+
+  // Filtros e Paginação
+  const filteredProposals = proposals.filter((p) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (p.client && p.client.toLowerCase().includes(searchLower)) ||
+      (p.number && p.number.toLowerCase().includes(searchLower)) ||
+      (p.document && p.document.includes(searchLower))
+    );
+  });
+
+  const totalPages = Math.ceil(filteredProposals.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentProposals = filteredProposals.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  const getStatusBadge = (status: string) => {
+    let bgClass = "bg-gray-200 text-gray-800";
+    if (status === "Enviada") bgClass = "bg-blue-100 text-blue-800";
+    if (status === "Aprovada") bgClass = "bg-green-100 text-green-800";
+    if (status === "Recusada") bgClass = "bg-red-100 text-red-800";
+    if (status === "Negociando") bgClass = "bg-yellow-100 text-yellow-800";
+
+    return (
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${bgClass}`}
+      >
+        {status}
+      </span>
+    );
   };
 
   if (isCreating) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 animate-in fade-in duration-300 pb-20">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsCreating(false)}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            Voltar
-          </button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Criar Nova Proposta
+            {editingId ? "Editar Proposta" : "Criar Nova Proposta"}
           </h1>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-8">
-          {/* Parte 1: Cabeçalho e Cliente */}
+          {/* Parte 1: Cabeçalho */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -94,8 +428,11 @@ const Proposals = () => {
               </label>
               <input
                 type="date"
-                className="w-full border p-2 rounded-lg bg-gray-50 dark:bg-gray-700"
-                defaultValue="2025-12-05"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                value={formData.date}
+                onChange={(e) =>
+                  setFormData({ ...formData, date: e.target.value })
+                }
               />
             </div>
             <div>
@@ -104,39 +441,74 @@ const Proposals = () => {
               </label>
               <input
                 type="date"
-                className="w-full border p-2 rounded-lg dark:bg-gray-700"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                value={formData.validity}
+                onChange={(e) =>
+                  setFormData({ ...formData, validity: e.target.value })
+                }
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Status
               </label>
-              <select className="w-full border p-2 rounded-lg dark:bg-gray-700">
-                <option>Rascunho</option>
-                <option>Enviada</option>
+              <select
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value as any })
+                }
+              >
+                <option value="Rascunho">Rascunho</option>
+                <option value="Enviada">Enviada</option>
+                <option value="Aprovada">Aprovada</option>
+                <option value="Recusada">Recusada</option>
+                <option value="Negociando">Negociando</option>
               </select>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          {/* Selecionar Cliente */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
               Selecionar Cliente
-            </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input type="radio" name="clientType" defaultChecked /> Pessoa
-                Jurídica
+            </h3>
+            <div className="flex gap-4 mb-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input
+                  type="radio"
+                  name="clientType"
+                  checked={formData.clientType === "PJ"}
+                  onChange={() =>
+                    setFormData({ ...formData, clientType: "PJ" })
+                  }
+                  className="text-indigo-600 focus:ring-indigo-500"
+                />{" "}
+                Pessoa Jurídica
               </label>
-              <label className="flex items-center gap-2">
-                <input type="radio" name="clientType" /> Pessoa Física
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input
+                  type="radio"
+                  name="clientType"
+                  checked={formData.clientType === "PF"}
+                  onChange={() =>
+                    setFormData({ ...formData, clientType: "PF" })
+                  }
+                  className="text-indigo-600 focus:ring-indigo-500"
+                />{" "}
+                Pessoa Física
               </label>
             </div>
             <div className="flex gap-2">
               <input
-                className="flex-1 border p-2 rounded-lg dark:bg-gray-700"
+                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Pesquisar organização..."
+                value={formData.client}
+                onChange={(e) =>
+                  setFormData({ ...formData, client: e.target.value })
+                }
               />
-              <button className="px-4 border rounded-lg hover:bg-gray-50 flex items-center gap-1">
+              <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm font-medium whitespace-nowrap shadow-sm">
                 + Novo
               </button>
             </div>
@@ -144,203 +516,521 @@ const Proposals = () => {
 
           <hr className="border-gray-200 dark:border-gray-700" />
 
-          {/* Parte 2: Itens */}
+          {/* Itens da Proposta - Formulário de Adição */}
           <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
               Itens da Proposta
             </h3>
-            <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg border border-gray-200 dark:border-gray-600 space-y-4">
-              <div className="grid grid-cols-[1fr_auto] gap-6">
-                <div className="space-y-4">
+
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 bg-white dark:bg-gray-800 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* Campos do Item (Esquerda) */}
+                <div className="md:col-span-10 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                         Descrição*
                       </label>
-                      <input className="w-full border p-2 rounded-lg bg-white" />
+                      <input
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={currentItem.description}
+                        onChange={(e) =>
+                          setCurrentItem({
+                            ...currentItem,
+                            description: e.target.value,
+                          })
+                        }
+                      />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                         Fabricante
                       </label>
-                      <input className="w-full border p-2 rounded-lg bg-white" />
+                      <input
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={currentItem.manufacturer}
+                        onChange={(e) =>
+                          setCurrentItem({
+                            ...currentItem,
+                            manufacturer: e.target.value,
+                          })
+                        }
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                         Modelo
                       </label>
-                      <input className="w-full border p-2 rounded-lg bg-white" />
+                      <input
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={currentItem.model}
+                        onChange={(e) =>
+                          setCurrentItem({
+                            ...currentItem,
+                            model: e.target.value,
+                          })
+                        }
+                      />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                         Status
                       </label>
-                      <select className="w-full border p-2 rounded-lg bg-white">
-                        <option>Venda</option>
+                      <select
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={currentItem.status}
+                        onChange={(e) =>
+                          setCurrentItem({
+                            ...currentItem,
+                            status: e.target.value as any,
+                          })
+                        }
+                      >
+                        <option value="Venda">Venda</option>
+                        <option value="Locação">Locação</option>
                       </select>
                     </div>
                   </div>
                 </div>
-                <div className="w-32">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+
+                {/* Imagem do Item (Direita) */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                     Imagem
                   </label>
-                  <div className="h-24 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 mb-2">
-                    Imagem
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border border-gray-300 dark:border-gray-600 rounded-lg h-[108px] bg-gray-50 dark:bg-gray-700 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 transition overflow-hidden relative"
+                  >
+                    {currentItem.image ? (
+                      <img
+                        src={currentItem.image}
+                        alt="Item"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center text-gray-400 dark:text-gray-500">
+                        <ImageIcon size={24} className="mb-1" />
+                        <span className="text-[10px]">Imagem</span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                    />
                   </div>
-                  <button className="w-full text-xs border bg-white py-1 rounded">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full mt-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs py-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-600"
+                  >
                     Escolher
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                   Descrição Detalhada
                 </label>
-                <textarea className="w-full border p-2 rounded-lg bg-white h-20 resize-none"></textarea>
+                <textarea
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none outline-none focus:ring-1 focus:ring-indigo-500"
+                  rows={3}
+                  value={currentItem.detailedDescription}
+                  onChange={(e) =>
+                    setCurrentItem({
+                      ...currentItem,
+                      detailedDescription: e.target.value,
+                    })
+                  }
+                ></textarea>
               </div>
 
-              <div className="bg-white p-3 rounded border border-gray-200">
-                <p className="text-xs font-bold mb-2">Parâmetros Adicionais</p>
-                <div className="flex gap-2">
-                  <input
-                    className="flex-1 border p-1.5 rounded text-sm"
-                    placeholder="Nome (Ex: Voltagem)"
-                  />
-                  <input
-                    className="flex-1 border p-1.5 rounded text-sm"
-                    placeholder="Valor (Ex: 220V)"
-                  />
-                  <button className="px-3 border rounded text-xs hover:bg-gray-50">
+              {/* Parâmetros Adicionais */}
+              <div className="pt-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Parâmetros Adicionais
+                </label>
+                {currentItem.params.length === 0 && (
+                  <p className="text-xs text-gray-400 italic mb-3">
+                    Nenhum parâmetro adicional.
+                  </p>
+                )}
+                <div className="space-y-2 mb-3">
+                  {currentItem.params.map((param, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded border border-gray-200 dark:border-gray-600"
+                    >
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-200">
+                        {param.name}:
+                      </span>
+                      <span className="text-xs text-gray-600 dark:text-gray-300 flex-1">
+                        {param.value}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveItemParam(idx)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Nome do Parâmetro
+                    </label>
+                    <input
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                      placeholder="Ex: DC"
+                      value={newParam.name}
+                      onChange={(e) =>
+                        setNewParam({ ...newParam, name: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Valor do Parâmetro
+                    </label>
+                    <input
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                      placeholder="Ex: R$ 4.264,00"
+                      value={newParam.value}
+                      onChange={(e) =>
+                        setNewParam({ ...newParam, value: e.target.value })
+                      }
+                    />
+                  </div>
+                  <button
+                    onClick={handleAddItemParam}
+                    className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 h-[42px]"
+                  >
                     Adicionar
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-4 items-end">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+              {/* Linha de Valores */}
+              <div className="grid grid-cols-4 gap-4 items-end pt-4">
+                <div className="col-span-1">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                     Quantidade*
                   </label>
                   <input
                     type="number"
-                    className="w-full border p-2 rounded-lg bg-white"
-                    defaultValue="1"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                    value={currentItem.quantity}
+                    onChange={(e) =>
+                      setCurrentItem({
+                        ...currentItem,
+                        quantity: Number(e.target.value),
+                      })
+                    }
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                <div className="col-span-1">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                     Valor Unitário*
                   </label>
                   <input
-                    className="w-full border p-2 rounded-lg bg-white"
-                    placeholder="0,00"
+                    type="number"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                    value={currentItem.unitPrice}
+                    onChange={(e) =>
+                      setCurrentItem({
+                        ...currentItem,
+                        unitPrice: Number(e.target.value),
+                      })
+                    }
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Unidade
+                <div className="col-span-1">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Unidade de Medida
                   </label>
                   <input
-                    className="w-full border p-2 rounded-lg bg-white"
-                    defaultValue="Unidade"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                    value={currentItem.unit}
+                    onChange={(e) =>
+                      setCurrentItem({ ...currentItem, unit: e.target.value })
+                    }
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                <div className="col-span-1">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                     Subtotal
                   </label>
-                  <div className="w-full bg-gray-100 p-2 rounded-lg font-bold text-gray-700">
-                    R$ 0,00
+                  <div className="w-full bg-gray-100 dark:bg-gray-700/50 rounded-lg p-2.5 text-sm font-bold text-gray-800 dark:text-white border border-gray-200 dark:border-gray-600 h-[42px] flex items-center">
+                    R${" "}
+                    {(
+                      currentItem.quantity *
+                      currentItem.unitPrice *
+                      (currentItem.status === "Locação" ? 24 : 1)
+                    ).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-2 mt-4">
-              <button className="px-4 py-2 border rounded-lg text-sm flex items-center gap-2 hover:bg-gray-50">
-                <BookOpen size={16} /> Do Catálogo
-              </button>
-              <button className="px-4 py-2 border rounded-lg text-sm flex items-center gap-2 hover:bg-gray-50">
-                <PlusIcon size={16} /> Manual
-              </button>
-              <div className="ml-auto text-xl font-bold">Total: R$ 0,00</div>
+            <div className="flex justify-between items-center mt-4">
+              <div className="flex gap-3">
+                <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium">
+                  <BookOpen size={16} /> Do Catálogo
+                </button>
+                <button
+                  onClick={handleAddItemToProposal}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium"
+                >
+                  <Plus size={16} /> + Manual
+                </button>
+              </div>
+              <div className="text-xl font-bold text-gray-900 dark:text-white">
+                Total: R${" "}
+                {(formData.value || 0).toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                })}
+              </div>
             </div>
+
+            {/* Lista de Itens Já Adicionados */}
+            {formData.items && formData.items.length > 0 && (
+              <div className="mt-6 space-y-2">
+                <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                  Itens Adicionados ({formData.items.length}):
+                </h4>
+                {formData.items.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 shadow-sm"
+                  >
+                    <div>
+                      <p className="font-bold text-sm text-gray-900 dark:text-white">
+                        {item.description}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {item.quantity} x R$ {item.unitPrice.toFixed(2)}
+                        {item.status === "Locação" && " (x24 Meses)"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="font-bold text-gray-800 dark:text-gray-200 text-sm">
+                        R${" "}
+                        {(
+                          item.quantity *
+                          item.unitPrice *
+                          (item.status === "Locação" ? 24 : 1)
+                        ).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveItemFromProposal(idx)}
+                        className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <hr className="border-gray-200 dark:border-gray-700" />
 
-          {/* Parte 3: Termos */}
+          {/* Parte 3: Termos Comerciais */}
           <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
               Termos Comerciais
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2 md:col-span-1">
-                <label className="text-xs font-medium text-gray-500">
-                  Faturamento
-                </label>
-                <textarea
-                  rows={2}
-                  className="w-full border p-2 rounded-lg resize-none"
-                  defaultValue="Realizado diretamente pela fábrica."
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Coluna 1 */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Faturamento
+                  </label>
+                  <textarea
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none outline-none focus:ring-1 focus:ring-indigo-500"
+                    rows={2}
+                    value={formData.terms?.billing}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        terms: { ...formData.terms!, billing: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Condições de Pagamento
+                  </label>
+                  <textarea
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none outline-none focus:ring-1 focus:ring-indigo-500"
+                    rows={2}
+                    value={formData.terms?.payment}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        terms: { ...formData.terms!, payment: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Garantia (Equipamentos)
+                  </label>
+                  <textarea
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none outline-none focus:ring-1 focus:ring-indigo-500"
+                    rows={2}
+                    value={formData.terms?.warrantyEquipment}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        terms: {
+                          ...formData.terms!,
+                          warrantyEquipment: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Instalação
+                  </label>
+                  <textarea
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none outline-none focus:ring-1 focus:ring-indigo-500"
+                    rows={2}
+                    value={formData.terms?.installation}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        terms: {
+                          ...formData.terms!,
+                          installation: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
               </div>
-              <div className="col-span-2 md:col-span-1">
-                <label className="text-xs font-medium text-gray-500">
-                  Treinamento
-                </label>
-                <textarea
-                  rows={2}
-                  className="w-full border p-2 rounded-lg resize-none"
-                  defaultValue="Capacitação técnica por especialistas."
-                />
+
+              {/* Coluna 2 */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Treinamento
+                  </label>
+                  <textarea
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none outline-none focus:ring-1 focus:ring-indigo-500"
+                    rows={2}
+                    value={formData.terms?.training}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        terms: { ...formData.terms!, training: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Prazo de Entrega
+                  </label>
+                  <textarea
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none outline-none focus:ring-1 focus:ring-indigo-500"
+                    rows={2}
+                    value={formData.terms?.delivery}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        terms: { ...formData.terms!, delivery: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Garantia (Acessórios)
+                  </label>
+                  <textarea
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none outline-none focus:ring-1 focus:ring-indigo-500"
+                    rows={2}
+                    value={formData.terms?.warrantyAccessories}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        terms: {
+                          ...formData.terms!,
+                          warrantyAccessories: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Assistência Técnica
+                  </label>
+                  <textarea
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none outline-none focus:ring-1 focus:ring-indigo-500"
+                    rows={2}
+                    value={formData.terms?.technicalAssistance}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        terms: {
+                          ...formData.terms!,
+                          technicalAssistance: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
               </div>
-              <div className="col-span-2 md:col-span-1">
-                <label className="text-xs font-medium text-gray-500">
-                  Condições de Pagamento
-                </label>
-                <textarea
-                  rows={2}
-                  className="w-full border p-2 rounded-lg resize-none"
-                  defaultValue="A vista"
-                />
-              </div>
-              <div className="col-span-2 md:col-span-1">
-                <label className="text-xs font-medium text-gray-500">
-                  Prazo de Entrega
-                </label>
-                <textarea
-                  rows={2}
-                  className="w-full border p-2 rounded-lg resize-none"
-                  defaultValue="Até 30 dias após confirmação."
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-500">
-                  Observações
-                </label>
-                <textarea
-                  rows={2}
-                  className="w-full border p-2 rounded-lg resize-none"
-                  defaultValue="Nenhuma"
-                />
-              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                Observações
+              </label>
+              <textarea
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none outline-none focus:ring-1 focus:ring-indigo-500"
+                rows={3}
+                value={formData.terms?.notes}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    terms: { ...formData.terms!, notes: e.target.value },
+                  })
+                }
+              />
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setIsCreating(false)}
-              className="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50"
+              className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition"
             >
               Cancelar
             </button>
-            <button className="px-6 py-2 bg-indigo-900 text-white rounded-lg hover:bg-indigo-800">
-              Criar Proposta
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-6 py-2 bg-indigo-900 hover:bg-indigo-800 text-white rounded-lg font-medium transition shadow-sm flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isSaving ? <Loader2 size={18} className="animate-spin" /> : null}
+              {editingId ? "Salvar Alterações" : "Criar Proposta"}
             </button>
           </div>
         </div>
@@ -349,7 +1039,8 @@ const Proposals = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 h-full flex flex-col font-sans">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Propostas
@@ -363,116 +1054,164 @@ const Proposals = () => {
             <input
               type="text"
               placeholder="Pesquisar..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full pl-10 pr-4 py-2 bg-[#2d3748] border border-[#4a5568] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-200 placeholder-gray-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <button
-            onClick={() => setIsCreating(true)}
-            className="bg-indigo-900 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition"
+            onClick={() => handleOpenCreate()}
+            className="bg-[#4338ca] hover:bg-[#3730a3] text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow-sm whitespace-nowrap"
           >
             <Plus size={18} /> Criar Nova
           </button>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Tabela Dark Theme (Estilo do Print) */}
+      <div className="bg-[#1f2937] rounded-lg shadow-lg border border-[#374151] overflow-hidden flex-1 flex flex-col">
+        <div className="overflow-x-auto flex-1">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 uppercase text-xs">
-              <tr>
-                <th className="px-6 py-3">Nº</th>
-                <th className="px-6 py-3">Data</th>
-                <th className="px-6 py-3">Cliente</th>
-                <th className="px-6 py-3">Contato do Cliente</th>
-                <th className="px-6 py-3">CNPJ/CPF</th>
-                <th className="px-6 py-3">Valor</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3">Etapa do Funil</th>
-                <th className="px-6 py-3 text-right">Ações</th>
+            <thead className="bg-[#1f2937] border-b border-[#374151]">
+              <tr className="text-[#9ca3af] text-xs uppercase font-bold tracking-wider">
+                <th className="px-6 py-4">Nº</th>
+                <th className="px-6 py-4">Data</th>
+                <th className="px-6 py-4">Cliente</th>
+                <th className="px-6 py-4">Contato do Cliente</th>
+                <th className="px-6 py-4">CNPJ/CPF</th>
+                <th className="px-6 py-4">Valor</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Etapa do Funil</th>
+                <th className="px-6 py-4 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {mockProposals.map((proposal) => (
-                <tr
-                  key={proposal.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition"
-                >
-                  <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                    {proposal.number}
+            <tbody className="divide-y divide-[#374151] bg-[#1f2937]">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={9} className="p-12 text-center">
+                    <Loader2
+                      className="animate-spin text-indigo-500 mx-auto"
+                      size={32}
+                    />
                   </td>
-                  <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                    {proposal.date}
-                  </td>
-                  <td
-                    className="px-6 py-4 font-medium text-gray-800 dark:text-gray-200 truncate max-w-[200px]"
-                    title={proposal.client}
-                  >
-                    {proposal.client}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                    {proposal.contact}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                    {proposal.document}
-                  </td>
-                  <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                    {proposal.value.toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    })}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${getStatusStyle(
-                        proposal.status
-                      )}`}
-                    >
-                      {proposal.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                    {proposal.stage}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        className="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
-                        title="Editar"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
-                        title="Imprimir/PDF"
-                      >
-                        <Printer size={16} />
-                      </button>
+                </tr>
+              ) : currentProposals.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="p-12 text-center text-gray-400">
+                    <div className="flex flex-col items-center gap-2">
+                      <FileText size={48} className="text-gray-600" />
+                      <p>Nenhuma proposta encontrada.</p>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                currentProposals.map((proposal) => (
+                  <tr
+                    key={proposal.id}
+                    className="hover:bg-[#374151] transition-colors group"
+                  >
+                    <td className="px-6 py-4 font-bold text-white">
+                      {proposal.number}
+                    </td>
+                    <td className="px-6 py-4 text-gray-300">
+                      {new Date(proposal.date).toLocaleDateString("pt-BR")}
+                    </td>
+                    <td
+                      className="px-6 py-4 font-medium text-white truncate max-w-[200px]"
+                      title={proposal.client}
+                    >
+                      {proposal.client}
+                    </td>
+                    <td className="px-6 py-4 text-gray-400">
+                      {proposal.contact || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-gray-400 font-mono text-xs">
+                      {proposal.document || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 font-bold text-white">
+                      {proposal.value.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })}
+                    </td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(proposal.status)}
+                    </td>
+                    <td className="px-6 py-4 text-gray-300">
+                      {proposal.stage}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex justify-center gap-3">
+                        <button
+                          onClick={() => handleOpenCreate(proposal)}
+                          className="text-gray-400 hover:text-white transition"
+                          title="Editar"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          className="text-gray-400 hover:text-white transition"
+                          title="Imprimir"
+                        >
+                          <Printer size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(proposal.id)}
+                          className="text-gray-400 hover:text-red-400 transition"
+                          title="Excluir"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Mostrando {mockProposals.length} de 24 propostas
+
+        {/* Footer Paginação */}
+        <div className="px-6 py-4 border-t border-[#374151] bg-[#1f2937] flex justify-between items-center text-sm text-gray-400">
+          <p>
+            Mostrando {currentProposals.length} de {filteredProposals.length}{" "}
+            propostas
           </p>
-          <div className="flex gap-2">
-            <button className="p-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 disabled:opacity-50">
-              <ChevronLeft size={18} />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="p-1.5 rounded border border-[#4a5568] hover:bg-[#374151] disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              <ChevronLeft size={16} />
             </button>
-            <span className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-              Página 1 de 5
+            <span className="px-2">
+              Página {currentPage} de {totalPages || 1}
             </span>
-            <button className="p-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
-              <ChevronRight size={18} />
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage >= totalPages}
+              className="p-1.5 rounded border border-[#4a5568] hover:bg-[#374151] disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
       </div>
+
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
+      />
     </div>
   );
 };
