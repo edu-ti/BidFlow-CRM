@@ -13,7 +13,12 @@ import {
   FileText,
   Upload,
   Image as ImageIcon,
+  Check,
+  User,
+  Building2,
+  Briefcase,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { db, auth, appId } from "../../lib/firebase";
 import {
   collection,
@@ -66,7 +71,9 @@ interface Proposal {
   date: string;
   validity: string;
   client: string;
+  clientId?: string; // Store ID for reference
   contact: string;
+  contactId?: string; // Store ID for reference
   document: string;
   value: number;
   status: "Rascunho" | "Enviada" | "Aprovada" | "Recusada" | "Negociando";
@@ -75,6 +82,39 @@ interface Proposal {
   items: ProposalItem[];
   terms: ProposalTerms;
   createdAt: string;
+  updatedAt?: string;
+}
+
+// Interfaces for fetching data
+interface Organization {
+  id: string;
+  fantasyName: string;
+  socialReason: string;
+  cnpj: string;
+}
+
+interface ContactPerson {
+  id: string;
+  organizationId: string;
+  name: string;
+  email: string;
+}
+
+interface IndividualClient {
+  id: string;
+  name: string;
+  cpf: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  manufacturer: string;
+  model: string;
+  description: string;
+  price: number;
+  unit: string;
+  image?: string;
 }
 
 const Proposals = () => {
@@ -82,6 +122,17 @@ const Proposals = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const navigate = useNavigate();
+
+  // Aux Data State
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [contacts, setContacts] = useState<ContactPerson[]>([]);
+  const [individuals, setIndividuals] = useState<IndividualClient[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  // Catalog Modal
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState("");
 
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -90,7 +141,7 @@ const Proposals = () => {
   // Estado de Edição/Criação
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Estado do Formulário Principal com Defaults do arquivo proposals.js
+  // Estado do Formulário Principal
   const [formData, setFormData] = useState<Partial<Proposal>>({
     number: "",
     date: new Date().toISOString().split("T")[0],
@@ -154,41 +205,128 @@ const Proposals = () => {
     type: "info",
   });
 
-  // 1. Carregar Propostas
+  // Helper para mostrar alertas customizados
+  const showAlert = (
+    title: string,
+    message: string,
+    type: ConfirmModalType = "info"
+  ) => {
+    setConfirmConfig({
+      title,
+      message,
+      type,
+      showCancel: false,
+      confirmText: "OK",
+      onConfirm: () => setIsConfirmOpen(false),
+    });
+    setIsConfirmOpen(true);
+  };
+
+  // 1. Initial Data Load
   useEffect(() => {
     if (!auth.currentUser) return;
+    const uid = auth.currentUser.uid;
 
-    const q = query(
-      collection(
-        db,
-        "artifacts",
-        appId,
-        "users",
-        auth.currentUser.uid,
-        "proposals"
-      ),
+    // Proposals
+    const qProposals = query(
+      collection(db, "artifacts", appId, "users", uid, "proposals"),
       orderBy("createdAt", "desc")
     );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedProposals = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Proposal[];
-      setProposals(fetchedProposals);
+    const unsubProposals = onSnapshot(qProposals, (snapshot) => {
+      setProposals(
+        snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Proposal))
+      );
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    // Organizations
+    const unsubOrgs = onSnapshot(
+      collection(db, "artifacts", appId, "users", uid, "organizations"),
+      (snap) =>
+        setOrganizations(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() } as Organization))
+        )
+    );
+
+    // Contacts
+    const unsubContacts = onSnapshot(
+      collection(db, "artifacts", appId, "users", uid, "contacts"),
+      (snap) =>
+        setContacts(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() } as ContactPerson))
+        )
+    );
+
+    // Individuals
+    const unsubIndividuals = onSnapshot(
+      collection(db, "artifacts", appId, "users", uid, "individuals"),
+      (snap) =>
+        setIndividuals(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() } as IndividualClient))
+        )
+    );
+
+    // Products
+    const unsubProducts = onSnapshot(
+      collection(db, "artifacts", appId, "users", uid, "products"),
+      (snap) =>
+        setProducts(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product))
+        )
+    );
+
+    return () => {
+      unsubProposals();
+      unsubOrgs();
+      unsubContacts();
+      unsubIndividuals();
+      unsubProducts();
+    };
   }, []);
 
-  // --- Função de Cálculo de Total (Baseada no PHP) ---
-  const calculateTotal = (items: ProposalItem[]) => {
-    return items.reduce((acc, item) => {
-      // Regra do PHP: Se for locação, multiplica por 24 (meses presumidos de contrato)
-      const multiplier = item.status === "Locação" ? 24 : 1;
-      return acc + item.quantity * item.unitPrice * multiplier;
-    }, 0);
+  // --- Helper: Parse Currency String ---
+  const parseCurrencyString = (val: string): number => {
+    if (!val) return 0;
+    // Remove tudo que não é dígito, ponto ou vírgula (considerando formato BRL)
+    const cleanStr = val.replace(/[^0-9,.-]+/g, "");
+    // Tenta formato brasileiro (1.000,00)
+    if (cleanStr.includes(",")) {
+      const normalized = cleanStr.replace(/\./g, "").replace(",", ".");
+      return parseFloat(normalized) || 0;
+    }
+    return parseFloat(cleanStr) || 0;
+  };
+
+  // --- Função de Cálculo de Subtotal do Item ---
+  const calculateItemSubtotal = (item: ProposalItem): number => {
+    // Valor base
+    let total = item.unitPrice;
+
+    // Adicionar valor dos parâmetros se detectado como moeda
+    item.params.forEach((p) => {
+      if (
+        p.value &&
+        (p.value.includes("R$") || !isNaN(Number(p.value.replace(",", "."))))
+      ) {
+        total += parseCurrencyString(p.value);
+      }
+    });
+
+    const multiplier = item.status === "Locação" ? 24 : 1;
+    return total * item.quantity * multiplier;
+  };
+
+  // --- Função de Cálculo de Total Geral ---
+  const calculateProposalTotal = (items: ProposalItem[]) => {
+    return items.reduce((acc, item) => acc + calculateItemSubtotal(item), 0);
+  };
+
+  // --- Print Handler Atualizado ---
+  const handlePrint = (proposal: Proposal) => {
+    // Abre a rota de impressão em uma nova aba
+    // Usamos hash router, então o caminho inclui #
+    const url = `#/print/proposal/${proposal.id}`;
+    window.open(url, "_blank");
   };
 
   // --- Handlers do Item Atual ---
@@ -219,15 +357,17 @@ const Proposals = () => {
 
   const handleAddItemToProposal = () => {
     if (!currentItem.description) {
-      alert("A descrição do item é obrigatória.");
+      showAlert(
+        "Campo Obrigatório",
+        "A descrição do item é obrigatória.",
+        "warning"
+      );
       return;
     }
 
     const newItem = { ...currentItem, id: Date.now().toString() };
     const updatedItems = [...(formData.items || []), newItem];
-
-    // Recalcula o valor total usando a lógica de multiplicador
-    const totalValue = calculateTotal(updatedItems);
+    const totalValue = calculateProposalTotal(updatedItems);
 
     setFormData((prev) => ({
       ...prev,
@@ -235,7 +375,7 @@ const Proposals = () => {
       value: totalValue,
     }));
 
-    // Reseta o item atual
+    // Reset item
     setCurrentItem({
       id: "",
       description: "",
@@ -253,13 +393,28 @@ const Proposals = () => {
 
   const handleRemoveItemFromProposal = (index: number) => {
     const updatedItems = (formData.items || []).filter((_, i) => i !== index);
-    const totalValue = calculateTotal(updatedItems);
+    const totalValue = calculateProposalTotal(updatedItems);
 
     setFormData((prev) => ({
       ...prev,
       items: updatedItems,
       value: totalValue,
     }));
+  };
+
+  // --- Catalog Handlers ---
+  const handleSelectProduct = (prod: Product) => {
+    setCurrentItem({
+      ...currentItem,
+      description: prod.name,
+      manufacturer: prod.manufacturer,
+      model: prod.model,
+      detailedDescription: prod.description,
+      unitPrice: prod.price,
+      unit: prod.unit,
+      image: prod.image,
+    });
+    setIsCatalogOpen(false);
   };
 
   // --- Handlers Principais ---
@@ -275,7 +430,6 @@ const Proposals = () => {
         .toString()
         .padStart(3, "0");
 
-      // Defaults exatos do proposals.js
       setFormData({
         number: `${randomNum}/${year}`,
         date: new Date().toISOString().split("T")[0],
@@ -310,8 +464,28 @@ const Proposals = () => {
   };
 
   const handleSave = async () => {
+    if (!formData.validity) {
+      setTimeout(
+        () =>
+          showAlert(
+            "Atenção",
+            "A data de Validade da Proposta é obrigatória.",
+            "warning"
+          ),
+        0
+      );
+      return;
+    }
     if (!formData.client || !auth.currentUser) {
-      alert("Preencha o cliente.");
+      setTimeout(
+        () =>
+          showAlert(
+            "Atenção",
+            "Selecione um cliente para prosseguir.",
+            "warning"
+          ),
+        0
+      );
       return;
     }
 
@@ -340,9 +514,10 @@ const Proposals = () => {
         });
       }
       setIsCreating(false);
+      showAlert("Sucesso", "Proposta salva com sucesso!", "success");
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar. Tente novamente.");
+      showAlert("Erro", "Erro ao salvar. Tente novamente.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -371,13 +546,65 @@ const Proposals = () => {
           );
         } catch (error) {
           console.error("Erro ao excluir:", error);
+          showAlert("Erro", "Não foi possível excluir a proposta.", "error");
         }
       },
     });
     setIsConfirmOpen(true);
   };
 
-  // Filtros e Paginação
+  // Logic for Client Dropdown options
+  const availableClients =
+    formData.clientType === "PJ"
+      ? organizations.map((o) => ({
+          id: o.id,
+          name: o.fantasyName || o.socialReason,
+          doc: o.cnpj,
+          type: "PJ",
+        }))
+      : individuals.map((i) => ({
+          id: i.id,
+          name: i.name,
+          doc: i.cpf,
+          type: "PF",
+        }));
+
+  // Logic for Contact Dropdown (Only for PJ)
+  const availableContacts =
+    formData.clientType === "PJ" && formData.clientId
+      ? contacts.filter((c) => c.organizationId === formData.clientId)
+      : [];
+
+  const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+    const client = availableClients.find((c) => c.id === selectedId);
+    if (client) {
+      setFormData({
+        ...formData,
+        client: client.name,
+        clientId: client.id,
+        document: client.doc,
+        contact: "", // Reset contact when client changes
+        contactId: "",
+      });
+    } else {
+      setFormData({
+        ...formData,
+        client: "",
+        clientId: "",
+        document: "",
+        contact: "",
+        contactId: "",
+      });
+    }
+  };
+
+  // Logic for filtering products in catalog modal
+  const filteredCatalog = products.filter((p) =>
+    p.name.toLowerCase().includes(catalogSearch.toLowerCase())
+  );
+
+  // Pagination Logic
   const filteredProposals = proposals.filter((p) => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -412,8 +639,14 @@ const Proposals = () => {
 
   if (isCreating) {
     return (
-      <div className="space-y-6 animate-in fade-in duration-300 pb-20">
-        <div className="flex items-center gap-4">
+      <div className="space-y-6 animate-in fade-in duration-300 pb-20 font-sans">
+        <div className="flex items-center gap-2 mb-4">
+          <button
+            onClick={() => setIsCreating(false)}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            Voltar
+          </button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {editingId ? "Editar Proposta" : "Criar Nova Proposta"}
           </h1>
@@ -437,7 +670,7 @@ const Proposals = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Validade da Proposta
+                Validade da Proposta <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -446,6 +679,7 @@ const Proposals = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, validity: e.target.value })
                 }
+                required
               />
             </div>
             <div>
@@ -480,7 +714,13 @@ const Proposals = () => {
                   name="clientType"
                   checked={formData.clientType === "PJ"}
                   onChange={() =>
-                    setFormData({ ...formData, clientType: "PJ" })
+                    setFormData({
+                      ...formData,
+                      clientType: "PJ",
+                      client: "",
+                      clientId: "",
+                      contact: "",
+                    })
                   }
                   className="text-indigo-600 focus:ring-indigo-500"
                 />{" "}
@@ -492,31 +732,82 @@ const Proposals = () => {
                   name="clientType"
                   checked={formData.clientType === "PF"}
                   onChange={() =>
-                    setFormData({ ...formData, clientType: "PF" })
+                    setFormData({
+                      ...formData,
+                      clientType: "PF",
+                      client: "",
+                      clientId: "",
+                      contact: "",
+                    })
                   }
                   className="text-indigo-600 focus:ring-indigo-500"
                 />{" "}
                 Pessoa Física
               </label>
             </div>
-            <div className="flex gap-2">
-              <input
-                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="Pesquisar organização..."
-                value={formData.client}
-                onChange={(e) =>
-                  setFormData({ ...formData, client: e.target.value })
-                }
-              />
-              <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm font-medium whitespace-nowrap shadow-sm">
-                + Novo
-              </button>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 flex gap-2">
+                <select
+                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  value={formData.clientId || ""}
+                  onChange={handleClientChange}
+                >
+                  <option value="">
+                    Selecione{" "}
+                    {formData.clientType === "PJ"
+                      ? "uma organização"
+                      : "um cliente"}
+                    ...
+                  </option>
+                  {availableClients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.doc})
+                    </option>
+                  ))}
+                </select>
+                <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm font-medium whitespace-nowrap shadow-sm">
+                  + Novo
+                </button>
+              </div>
+
+              {formData.clientType === "PJ" && (
+                <div className="flex-1">
+                  <select
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                    value={formData.contactId || ""}
+                    onChange={(e) => {
+                      const contact = availableContacts.find(
+                        (c) => c.id === e.target.value
+                      );
+                      setFormData({
+                        ...formData,
+                        contact: contact ? contact.name : "",
+                        contactId: contact ? contact.id : "",
+                      });
+                    }}
+                    disabled={!formData.clientId}
+                  >
+                    <option value="">
+                      {availableContacts.length > 0
+                        ? "Selecione o contato..."
+                        : formData.clientId
+                        ? "Sem contatos cadastrados"
+                        : "Selecione uma organização primeiro"}
+                    </option>
+                    {availableContacts.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 
           <hr className="border-gray-200 dark:border-gray-700" />
 
-          {/* Itens da Proposta - Formulário de Adição */}
+          {/* Itens da Proposta */}
           <div>
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
               Itens da Proposta
@@ -702,7 +993,7 @@ const Proposals = () => {
                     </label>
                     <input
                       className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Ex: R$ 4.264,00"
+                      placeholder="Ex: R$ 4.264,00 (Somará ao total se for valor)"
                       value={newParam.value}
                       onChange={(e) =>
                         setNewParam({ ...newParam, value: e.target.value })
@@ -770,11 +1061,12 @@ const Proposals = () => {
                   </label>
                   <div className="w-full bg-gray-100 dark:bg-gray-700/50 rounded-lg p-2.5 text-sm font-bold text-gray-800 dark:text-white border border-gray-200 dark:border-gray-600 h-[42px] flex items-center">
                     R${" "}
-                    {(
-                      currentItem.quantity *
-                      currentItem.unitPrice *
-                      (currentItem.status === "Locação" ? 24 : 1)
-                    ).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    {calculateItemSubtotal(currentItem).toLocaleString(
+                      "pt-BR",
+                      {
+                        minimumFractionDigits: 2,
+                      }
+                    )}
                   </div>
                 </div>
               </div>
@@ -782,7 +1074,10 @@ const Proposals = () => {
 
             <div className="flex justify-between items-center mt-4">
               <div className="flex gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium">
+                <button
+                  onClick={() => setIsCatalogOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium"
+                >
                   <BookOpen size={16} /> Do Catálogo
                 </button>
                 <button
@@ -818,16 +1113,15 @@ const Proposals = () => {
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {item.quantity} x R$ {item.unitPrice.toFixed(2)}
                         {item.status === "Locação" && " (x24 Meses)"}
+                        {item.params.length > 0 && " + Parâmetros"}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="font-bold text-gray-800 dark:text-gray-200 text-sm">
                         R${" "}
-                        {(
-                          item.quantity *
-                          item.unitPrice *
-                          (item.status === "Locação" ? 24 : 1)
-                        ).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        {calculateItemSubtotal(item).toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                        })}
                       </span>
                       <button
                         onClick={() => handleRemoveItemFromProposal(idx)}
@@ -1034,10 +1328,104 @@ const Proposals = () => {
             </button>
           </div>
         </div>
+
+        {/* Modal de Confirmação (RENDERIZADO DENTRO DO BLOCO DE CRIAÇÃO TAMBÉM) */}
+        <ConfirmModal
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          type={confirmConfig.type}
+          onConfirm={confirmConfig.onConfirm}
+          confirmText={confirmConfig.confirmText}
+          showCancel={confirmConfig.showCancel}
+        />
+
+        {/* Modal de Catálogo */}
+        {isCatalogOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-gray-800 w-full max-w-3xl rounded-xl shadow-2xl p-0 overflow-hidden flex flex-col max-h-[80vh]">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Selecionar Produto do Catálogo
+                </h3>
+                <button
+                  onClick={() => setIsCatalogOpen(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                <div className="relative">
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    size={18}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Buscar por nome, modelo ou fabricante..."
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    value={catalogSearch}
+                    onChange={(e) => setCatalogSearch(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="overflow-y-auto p-4 space-y-2">
+                {filteredCatalog.length > 0 ? (
+                  filteredCatalog.map((prod) => (
+                    <div
+                      key={prod.id}
+                      onClick={() => handleSelectProduct(prod)}
+                      className="flex items-center gap-4 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-pointer transition group"
+                    >
+                      <div className="w-12 h-12 bg-gray-100 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
+                        {prod.image ? (
+                          <img
+                            src={prod.image}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <ImageIcon size={20} className="text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-gray-900 dark:text-white">
+                          {prod.name}
+                        </h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {prod.model} • {prod.manufacturer}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-indigo-600 dark:text-indigo-400">
+                          R${" "}
+                          {prod.price.toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </p>
+                        <span className="text-xs text-gray-400">
+                          {prod.unit}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-gray-500 py-8">
+                    Nenhum produto encontrado.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
+  // List View
   return (
     <div className="space-y-6 h-full flex flex-col font-sans">
       {/* Header */}
@@ -1150,6 +1538,7 @@ const Proposals = () => {
                           <Edit2 size={16} />
                         </button>
                         <button
+                          onClick={() => handlePrint(proposal)}
                           className="text-gray-400 hover:text-white transition"
                           title="Imprimir"
                         >

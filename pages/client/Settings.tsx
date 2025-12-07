@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   User,
   Bell,
@@ -11,19 +11,28 @@ import {
   Monitor,
   ChevronRight,
   Check,
+  Loader2,
 } from "lucide-react";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db, auth, appId } from "../../lib/firebase";
 import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Estado para feedback de sucesso
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Profile State
   const [profile, setProfile] = useState({
-    name: "Alex Vendor",
-    role: "Gerente de Vendas",
-    email: "alex@company.com",
-    avatar: "https://picsum.photos/200",
+    name: "",
+    role: "",
+    email: "",
+    avatar: "",
+    department: "",
+    phone: "",
   });
 
   // Security State
@@ -62,6 +71,54 @@ const Settings = () => {
     setIsConfirmOpen(true);
   };
 
+  // Carregar dados do perfil
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!auth.currentUser) return;
+      try {
+        const docRef = doc(
+          db,
+          "artifacts",
+          appId,
+          "users",
+          auth.currentUser.uid,
+          "settings",
+          "profile"
+        );
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setProfile({
+            name: data.name || auth.currentUser.displayName || "",
+            email: data.email || auth.currentUser.email || "",
+            avatar:
+              data.avatar ||
+              auth.currentUser.photoURL ||
+              `https://ui-avatars.com/api/?name=${auth.currentUser.email}&background=random`,
+            role: data.role || "",
+            department: data.department || "",
+            phone: data.phone || "",
+          });
+        } else {
+          setProfile({
+            name: auth.currentUser.displayName || "",
+            email: auth.currentUser.email || "",
+            avatar:
+              auth.currentUser.photoURL ||
+              `https://ui-avatars.com/api/?name=${auth.currentUser.email}&background=random`,
+            role: "Gerente",
+            department: "Comercial",
+            phone: "",
+          });
+        }
+      } catch (e) {
+        console.error("Erro ao carregar perfil:", e);
+      }
+    };
+    loadProfile();
+  }, []);
+
   const handlePhotoUpload = () => {
     fileInputRef.current?.click();
   };
@@ -74,20 +131,34 @@ const Settings = () => {
     }
   };
 
-  const handleSaveProfile = () => {
-    // In a real app, this would send data to backend
-    const btn = document.getElementById("save-profile-btn");
-    if (btn) {
-      const originalContent = btn.innerHTML;
-      btn.innerHTML = "Salvo!";
-      btn.classList.remove("bg-indigo-600", "hover:bg-indigo-700");
-      btn.classList.add("bg-green-600", "hover:bg-green-700");
+  const handleSaveProfile = async () => {
+    if (!auth.currentUser) return;
+    setLoading(true);
+    setSaveSuccess(false);
 
+    try {
+      await setDoc(
+        doc(
+          db,
+          "artifacts",
+          appId,
+          "users",
+          auth.currentUser.uid,
+          "settings",
+          "profile"
+        ),
+        profile
+      );
+
+      setSaveSuccess(true);
       setTimeout(() => {
-        btn.innerHTML = originalContent;
-        btn.classList.add("bg-indigo-600", "hover:bg-indigo-700");
-        btn.classList.remove("bg-green-600", "hover:bg-green-700");
+        setSaveSuccess(false);
       }, 2000);
+    } catch (e) {
+      console.error("Erro ao salvar:", e);
+      showAlert("Erro", "Não foi possível salvar o perfil.", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -112,7 +183,6 @@ const Settings = () => {
       showCancel: true,
       confirmText: "Desconectar",
       onConfirm: () => {
-        // Aqui iria a lógica de desconexão
         setIsConfirmOpen(false);
         setTimeout(() => {
           showAlert("Sucesso", "Sessão do WhatsApp desconectada.", "success");
@@ -218,7 +288,7 @@ const Settings = () => {
                     onChange={(e) =>
                       setProfile({ ...profile, name: e.target.value })
                     }
-                    className="w-full px-4 py-3 bg-blue-500 border border-transparent text-gray rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none placeholder-gray-400 dark:bg-gray-700"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-gray-700 dark:text-white placeholder-gray-400"
                   />
                 </div>
                 <div>
@@ -231,9 +301,40 @@ const Settings = () => {
                     onChange={(e) =>
                       setProfile({ ...profile, role: e.target.value })
                     }
-                    className="w-full px-4 py-3 bg-blue-500 border border-transparent text-gray rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none placeholder-gray-400 dark:bg-gray-700"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-gray-700 dark:text-white placeholder-gray-400"
                   />
                 </div>
+
+                {/* Novos Campos: Setor e Telefone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Setor / Departamento
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.department}
+                    onChange={(e) =>
+                      setProfile({ ...profile, department: e.target.value })
+                    }
+                    placeholder="Ex: Comercial, Suporte"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-gray-700 dark:text-white placeholder-gray-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Telefone
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.phone}
+                    onChange={(e) =>
+                      setProfile({ ...profile, phone: e.target.value })
+                    }
+                    placeholder="(00) 00000-0000"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-gray-700 dark:text-white placeholder-gray-400"
+                  />
+                </div>
+
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Email
@@ -253,9 +354,21 @@ const Settings = () => {
                 <button
                   id="save-profile-btn"
                   onClick={handleSaveProfile}
-                  className="bg-indigo-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 transition font-medium shadow-sm"
+                  disabled={loading}
+                  className={`px-6 py-2 rounded-lg flex items-center gap-2 transition font-medium shadow-sm disabled:opacity-70 ${
+                    saveSuccess
+                      ? "bg-green-600 hover:bg-green-700 text-white"
+                      : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                  }`}
                 >
-                  <Save size={18} /> Salvar Alterações
+                  {loading ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : saveSuccess ? (
+                    <Check size={18} />
+                  ) : (
+                    <Save size={18} />
+                  )}
+                  {saveSuccess ? "Salvo!" : "Salvar Alterações"}
                 </button>
               </div>
             </div>

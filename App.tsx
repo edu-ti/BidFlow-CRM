@@ -76,6 +76,7 @@ import Reports from "./pages/client/Reports";
 import Settings from "./pages/client/Settings";
 import Proposals from "./pages/client/Proposals"; // Nova Página
 import Catalog from "./pages/client/Catalog"; // Nova Página
+import ProposalPrint from "./pages/client/ProposalPrint"; // Nova Importação
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -670,6 +671,9 @@ const App = () => {
             )
           }
         />
+        
+        {/* Nova Rota de Impressão (Fora do Layout Principal) */}
+        <Route path="/print/proposal/:id" element={<ProposalPrint />} />
 
         <Route
           path="/app/*"
