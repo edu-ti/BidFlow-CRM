@@ -28,6 +28,7 @@ interface ProposalItem {
   quantity: number;
   unitPrice: number;
   unit: string;
+  rentDuration?: number; // Campo adicionado
 }
 
 interface ProposalTerms {
@@ -221,6 +222,18 @@ const ProposalPrint = () => {
     return parseFloat(cleanStr) || 0;
   };
 
+  const getMultiplier = (item: ProposalItem): number => {
+    if (item.status === "Locação") {
+      // Se tiver duração definida, usa ela.
+      // Se não tiver (legado), assume 24 meses como padrão antigo ou 12 se preferir.
+      // Aqui vamos assumir que se não tem rentDuration em locação, pode ser um dado antigo que usava 24.
+      return item.rentDuration && item.rentDuration > 0
+        ? item.rentDuration
+        : 24;
+    }
+    return 1;
+  };
+
   const calculateItemSubtotal = (item: ProposalItem): number => {
     let total = item.unitPrice;
     item.params.forEach((p) => {
@@ -231,9 +244,15 @@ const ProposalPrint = () => {
         total += parseCurrencyString(p.value);
       }
     });
-    const multiplier = item.status === "Locação" ? 24 : 1;
+
+    const multiplier = getMultiplier(item);
     return total * item.quantity * multiplier;
   };
+
+  // Recalcular o total geral com a nova lógica (para exibir corretamente, caso o salvo esteja desatualizado ou apenas para garantia)
+  const totalGeral = proposal
+    ? proposal.items.reduce((acc, item) => acc + calculateItemSubtotal(item), 0)
+    : 0;
 
   if (loading) {
     return (
@@ -256,6 +275,7 @@ const ProposalPrint = () => {
 
   return (
     <div className="bg-gray-100 min-h-screen flex justify-center py-8 print:p-0 print:bg-white print:min-h-0">
+      {/* ... estilos ... */}
       <style>
         {`
           @media print {
@@ -278,7 +298,6 @@ const ProposalPrint = () => {
                 display: block !important;
             }
 
-            /* RODAPÉ FIXO EM CADA PÁGINA */
             .page-footer {
                 position: fixed;
                 bottom: 0;
@@ -287,19 +306,16 @@ const ProposalPrint = () => {
                 height: 50px;
                 background: white;
                 z-index: 1000;
-                padding-right: 3rem; /* Alinhamento com o conteúdo */
+                padding-right: 3rem; 
             }
 
-            /* Espaço no final do conteúdo para não cobrir o rodapé */
             .print-content {
                 margin-bottom: 60px; 
             }
 
-            /* Previne quebra de linhas indesejadas */
             tr { page-break-inside: avoid; }
             .break-inside-avoid { page-break-inside: avoid; }
             
-            /* Contador de Páginas (Padrão CSS Paged Media) */
             .page-number:after {
                 content: "Página | " counter(page);
             }
@@ -307,7 +323,7 @@ const ProposalPrint = () => {
         `}
       </style>
 
-      {/* Toolbar Flutuante */}
+      {/* Barra de Ferramentas Flutuante */}
       <div className="fixed top-4 right-4 flex flex-col gap-2 no-print z-50">
         <button
           onClick={() => window.print()}
@@ -325,9 +341,8 @@ const ProposalPrint = () => {
         </button>
       </div>
 
-      {/* A4 Container */}
       <div className="print-container bg-white w-[210mm] min-h-[297mm] shadow-2xl relative mx-auto print:mx-0">
-        {/* RODAPÉ FIXO (Repete em todas as páginas na impressão) */}
+        {/* ... Rodapé ... */}
         <div className="page-footer hidden print:block">
           <div className="bg-indigo-900 h-2 w-[calc(100%-6rem)] mx-12 mt-4 mb-2"></div>
           <div className="text-right text-xs text-gray-500 font-medium">
@@ -336,14 +351,15 @@ const ProposalPrint = () => {
         </div>
 
         <div className="p-12 text-gray-900 font-sans text-sm print-content">
-          {/* Header */}
+          {/* Cabeçalho */}
           <header className="flex justify-between items-start border-b-2 border-indigo-900 pb-6 mb-8">
             <div className="flex items-center gap-4">
+              {/* Use caminho absoluto para ativos se necessário ou mantenha relativo se funcionar na sua configuração. Ficheiros anteriores usavam /assets/... */}
               <div className="w-24 h-24 relative">
                 <img
                   src="/assets/logo-bidflow.png"
                   className="object-contain w-full h-full"
-                  alt="Logo"
+                  alt="Logótipo"
                 />
               </div>
               <div className="text-xs text-gray-600 space-y-1">
@@ -364,7 +380,7 @@ const ProposalPrint = () => {
               <p className="text-gray-500 mt-1">Nº {proposal.number}</p>
               <div className="mt-4 text-xs font-medium">
                 <p>
-                  Data Emissão:{" "}
+                  Data de Emissão:{" "}
                   {new Date(proposal.date).toLocaleDateString("pt-BR")}
                 </p>
                 <p className="text-red-600">
@@ -375,7 +391,7 @@ const ProposalPrint = () => {
             </div>
           </header>
 
-          {/* Client Info */}
+          {/* Informações do Cliente */}
           <section className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-8 break-inside-avoid">
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
@@ -414,7 +430,7 @@ const ProposalPrint = () => {
             </div>
           </section>
 
-          {/* Intro Text */}
+          {/* Texto de Introdução */}
           <div className="mb-8 text-xs text-gray-700 leading-relaxed text-justify break-inside-avoid">
             <p className="mb-2 font-bold">Prezados (as),</p>
             <p>
@@ -426,14 +442,14 @@ const ProposalPrint = () => {
             </p>
           </div>
 
-          {/* Items Table */}
+          {/* Tabela de Itens */}
           <div className="mb-8">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-indigo-900 text-white">
                   <th className="p-2 text-center w-16">Imagem</th>
                   <th className="p-2 text-left">Descrição</th>
-                  <th className="p-2 text-center">Status</th>
+                  <th className="p-2 text-center">Estado</th>
                   <th className="p-2 text-center">Unid.</th>
                   <th className="p-2 text-center">Qtd</th>
                   <th className="p-2 text-right">Vlr. Unit.</th>
@@ -479,7 +495,14 @@ const ProposalPrint = () => {
                       )}
                     </td>
                     <td className="p-2 text-center align-middle uppercase font-medium text-[10px]">
-                      {item.status}
+                      <div className="flex flex-col items-center">
+                        <span>{item.status}</span>
+                        {item.status === "Locação" && (
+                          <span className="text-[9px] text-gray-500 whitespace-nowrap">
+                            {getMultiplier(item)} Meses
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-2 text-center align-middle">
                       {item.unit}
@@ -511,7 +534,7 @@ const ProposalPrint = () => {
                     Valor Total Geral
                   </td>
                   <td className="p-3 text-right font-bold text-indigo-900 text-sm">
-                    {proposal.value.toLocaleString("pt-BR", {
+                    {totalGeral.toLocaleString("pt-BR", {
                       style: "currency",
                       currency: "BRL",
                     })}
@@ -521,7 +544,7 @@ const ProposalPrint = () => {
             </table>
           </div>
 
-          {/* Terms and Conditions */}
+          {/* Termos e Condições */}
           <div className="mb-12 break-inside-avoid">
             <h3 className="text-sm font-bold text-indigo-900 border-b border-gray-300 pb-1 mb-3">
               Condições Gerais de Fornecimento
@@ -580,7 +603,7 @@ const ProposalPrint = () => {
             </div>
           </div>
 
-          {/* Signatures (DYNAMIC - Puxando do userProfile carregado) */}
+          {/* Assinaturas */}
           <div className="mt-auto break-inside-avoid">
             <div className="flex justify-between items-end">
               <div className="text-xs text-gray-700">
@@ -603,11 +626,11 @@ const ProposalPrint = () => {
           </div>
         </div>
 
-        {/* Footer with Page Number - Visualização em tela (para não ficar vazio no preview) */}
+        {/* Rodapé com Número de Página */}
         <div className="print:hidden w-[210mm] mx-auto pb-8 px-12">
           <div className="bg-indigo-900 h-2 w-full mt-4 mb-2"></div>
           <div className="text-right text-xs text-gray-500 font-medium">
-            Página | 1 
+            Página | 1
           </div>
         </div>
       </div>

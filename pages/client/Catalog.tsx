@@ -33,7 +33,7 @@ interface Product {
   description: string;
   price: number;
   unit: string;
-  image?: string; // URL ou Base64 (simples para este exemplo)
+  image?: string; // URL ou Base64
   createdAt: string;
 }
 
@@ -43,6 +43,11 @@ const Catalog = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedManufacturer, setSelectedManufacturer] = useState("Todos");
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+
+  // Estado para controlar erros de carregamento de imagem por produto
+  const [imageLoadErrors, setImageLoadErrors] = useState<
+    Record<string, boolean>
+  >({});
 
   // Modal e Formulário
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -141,13 +146,26 @@ const Catalog = () => {
     setIsModalOpen(true);
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Função auxiliar para converter arquivo em Base64
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Para simplicidade, criamos um ObjectURL local.
-      // Em produção real, você faria upload para o Firebase Storage.
-      const url = URL.createObjectURL(file);
-      setFormData((prev) => ({ ...prev, image: url }));
+      try {
+        // Converte para Base64 para persistir corretamente no Firestore (para uso leve)
+        const base64 = await convertToBase64(file);
+        setFormData((prev) => ({ ...prev, image: base64 }));
+      } catch (error) {
+        console.error("Erro ao converter imagem:", error);
+      }
     }
   };
 
@@ -223,6 +241,10 @@ const Catalog = () => {
       },
     });
     setIsConfirmOpen(true);
+  };
+
+  const handleImageError = (productId: string) => {
+    setImageLoadErrors((prev) => ({ ...prev, [productId]: true }));
   };
 
   return (
@@ -376,11 +398,12 @@ const Catalog = () => {
                   >
                     <td className="px-6 py-4">
                       <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-600">
-                        {product.image ? (
+                        {product.image && !imageLoadErrors[product.id] ? (
                           <img
                             src={product.image}
                             alt={product.name}
                             className="w-full h-full object-cover"
+                            onError={() => handleImageError(product.id)}
                           />
                         ) : (
                           <ImageIcon size={20} className="text-gray-400" />

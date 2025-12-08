@@ -19,7 +19,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { db, auth, appId } from "../../lib/firebase";
+import { db, auth, appId } from "../../lib/firebase"; // Caminho relativo mantido
 import {
   collection,
   addDoc,
@@ -30,7 +30,7 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
-import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
+import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal"; // Caminho relativo mantido
 
 // --- Interfaces ---
 
@@ -51,6 +51,7 @@ interface ProposalItem {
   quantity: number;
   unitPrice: number;
   unit: string;
+  rentDuration?: number; // Novo campo para duração da locação
 }
 
 interface ProposalTerms {
@@ -71,9 +72,9 @@ interface Proposal {
   date: string;
   validity: string;
   client: string;
-  clientId?: string; // Store ID for reference
+  clientId?: string;
   contact: string;
-  contactId?: string; // Store ID for reference
+  contactId?: string;
   document: string;
   value: number;
   status: "Rascunho" | "Enviada" | "Aprovada" | "Recusada" | "Negociando";
@@ -182,6 +183,7 @@ const Proposals = () => {
     unitPrice: 0,
     unit: "Unidade",
     image: "",
+    rentDuration: 12, // Default duration
   });
 
   // Estado para novo parâmetro do item
@@ -205,7 +207,6 @@ const Proposals = () => {
     type: "info",
   });
 
-  // Helper para mostrar alertas customizados
   const showAlert = (
     title: string,
     message: string,
@@ -284,12 +285,10 @@ const Proposals = () => {
     };
   }, []);
 
-  // --- Helper: Parse Currency String ---
+  // --- Helpers ---
   const parseCurrencyString = (val: string): number => {
     if (!val) return 0;
-    // Remove tudo que não é dígito, ponto ou vírgula (considerando formato BRL)
     const cleanStr = val.replace(/[^0-9,.-]+/g, "");
-    // Tenta formato brasileiro (1.000,00)
     if (cleanStr.includes(",")) {
       const normalized = cleanStr.replace(/\./g, "").replace(",", ".");
       return parseFloat(normalized) || 0;
@@ -297,12 +296,8 @@ const Proposals = () => {
     return parseFloat(cleanStr) || 0;
   };
 
-  // --- Função de Cálculo de Subtotal do Item ---
   const calculateItemSubtotal = (item: ProposalItem): number => {
-    // Valor base
     let total = item.unitPrice;
-
-    // Adicionar valor dos parâmetros se detectado como moeda
     item.params.forEach((p) => {
       if (
         p.value &&
@@ -312,25 +307,21 @@ const Proposals = () => {
       }
     });
 
-    const multiplier = item.status === "Locação" ? 24 : 1;
+    // Se for locação, multiplica pela duração (meses), caso contrário é 1
+    const multiplier = item.status === "Locação" ? item.rentDuration || 1 : 1;
     return total * item.quantity * multiplier;
   };
 
-  // --- Função de Cálculo de Total Geral ---
   const calculateProposalTotal = (items: ProposalItem[]) => {
     return items.reduce((acc, item) => acc + calculateItemSubtotal(item), 0);
   };
 
-  // --- Print Handler Atualizado ---
   const handlePrint = (proposal: Proposal) => {
-    // Abre a rota de impressão em uma nova aba
-    // Usamos hash router, então o caminho inclui #
     const url = `#/print/proposal/${proposal.id}`;
     window.open(url, "_blank");
   };
 
   // --- Handlers do Item Atual ---
-
   const handleAddItemParam = () => {
     if (newParam.name && newParam.value) {
       setCurrentItem((prev) => ({
@@ -388,6 +379,7 @@ const Proposals = () => {
       unitPrice: 0,
       unit: "Unidade",
       image: "",
+      rentDuration: 12,
     });
   };
 
@@ -402,7 +394,6 @@ const Proposals = () => {
     }));
   };
 
-  // --- Catalog Handlers ---
   const handleSelectProduct = (prod: Product) => {
     setCurrentItem({
       ...currentItem,
@@ -425,13 +416,37 @@ const Proposals = () => {
       setFormData({ ...proposal });
     } else {
       setEditingId(null);
-      const year = new Date().getFullYear();
-      const randomNum = Math.floor(Math.random() * 1000)
+
+      // Lógica de Geração Sequencial de Número (0001/YYYY)
+      const currentYear = new Date().getFullYear();
+
+      const currentYearProposals = proposals.filter((p) => {
+        if (!p.number) return false;
+        const parts = p.number.split("/");
+        return parts.length === 2 && parts[1] === currentYear.toString();
+      });
+
+      let nextSeq = 1;
+
+      if (currentYearProposals.length > 0) {
+        const sequences = currentYearProposals
+          .map((p) => {
+            const parts = p.number.split("/");
+            return parseInt(parts[0], 10);
+          })
+          .filter((n) => !isNaN(n));
+
+        if (sequences.length > 0) {
+          nextSeq = Math.max(...sequences) + 1;
+        }
+      }
+
+      const formattedNumber = `${nextSeq
         .toString()
-        .padStart(3, "0");
+        .padStart(4, "0")}/${currentYear}`;
 
       setFormData({
-        number: `${randomNum}/${year}`,
+        number: formattedNumber,
         date: new Date().toISOString().split("T")[0],
         validity: "",
         client: "",
@@ -553,7 +568,6 @@ const Proposals = () => {
     setIsConfirmOpen(true);
   };
 
-  // Logic for Client Dropdown options
   const availableClients =
     formData.clientType === "PJ"
       ? organizations.map((o) => ({
@@ -569,7 +583,6 @@ const Proposals = () => {
           type: "PF",
         }));
 
-  // Logic for Contact Dropdown (Only for PJ)
   const availableContacts =
     formData.clientType === "PJ" && formData.clientId
       ? contacts.filter((c) => c.organizationId === formData.clientId)
@@ -584,7 +597,7 @@ const Proposals = () => {
         client: client.name,
         clientId: client.id,
         document: client.doc,
-        contact: "", // Reset contact when client changes
+        contact: "",
         contactId: "",
       });
     } else {
@@ -599,12 +612,10 @@ const Proposals = () => {
     }
   };
 
-  // Logic for filtering products in catalog modal
   const filteredCatalog = products.filter((p) =>
     p.name.toLowerCase().includes(catalogSearch.toLowerCase())
   );
 
-  // Pagination Logic
   const filteredProposals = proposals.filter((p) => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -654,7 +665,18 @@ const Proposals = () => {
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-8">
           {/* Parte 1: Cabeçalho */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Número da Proposta
+              </label>
+              <input
+                type="text"
+                disabled
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 cursor-not-allowed font-bold"
+                value={formData.number}
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Data de Criação
@@ -872,12 +894,19 @@ const Proposals = () => {
                       <select
                         className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
                         value={currentItem.status}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const newStatus = e.target.value as any;
                           setCurrentItem({
                             ...currentItem,
-                            status: e.target.value as any,
-                          })
-                        }
+                            status: newStatus,
+                            unit:
+                              newStatus === "Locação"
+                                ? "Mês"
+                                : currentItem.unit, // Muda para Mês se locação
+                            rentDuration:
+                              newStatus === "Locação" ? 12 : undefined, // Padrão 12 meses
+                          });
+                        }}
                       >
                         <option value="Venda">Venda</option>
                         <option value="Locação">Locação</option>
@@ -1010,7 +1039,13 @@ const Proposals = () => {
               </div>
 
               {/* Linha de Valores */}
-              <div className="grid grid-cols-4 gap-4 items-end pt-4">
+              <div
+                className={`grid gap-4 items-end pt-4 ${
+                  currentItem.status === "Locação"
+                    ? "grid-cols-5"
+                    : "grid-cols-4"
+                }`}
+              >
                 <div className="col-span-1">
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                     Quantidade*
@@ -1043,6 +1078,26 @@ const Proposals = () => {
                     }
                   />
                 </div>
+
+                {currentItem.status === "Locação" && (
+                  <div className="col-span-1">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Meses Locação
+                    </label>
+                    <input
+                      type="number"
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                      value={currentItem.rentDuration}
+                      onChange={(e) =>
+                        setCurrentItem({
+                          ...currentItem,
+                          rentDuration: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                )}
+
                 <div className="col-span-1">
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                     Unidade de Medida
@@ -1112,7 +1167,8 @@ const Proposals = () => {
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {item.quantity} x R$ {item.unitPrice.toFixed(2)}
-                        {item.status === "Locação" && " (x24 Meses)"}
+                        {item.status === "Locação" &&
+                          ` (x${item.rentDuration || 24} Meses)`}
                         {item.params.length > 0 && " + Parâmetros"}
                       </p>
                     </div>
