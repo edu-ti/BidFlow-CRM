@@ -1,0 +1,46 @@
+version: '3.3'
+
+services:
+  evolution-api:
+    container_name: evolution_api
+    image: atendai/evolution-api:v2.1.1
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - AUTHENTICATION_API_KEY=g3st@03Du4rd0
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://postgres:evolution123@postgres:5432/evolution
+      - DATABASE_CLIENT_NAME=evolution_exchange
+      # Configuração do Redis (Novo!)
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://redis:6379/0
+      - CACHE_REDIS_PREFIX=evolution
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    container_name: evolution_postgres
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=evolution123
+      - POSTGRES_DB=evolution
+    volumes:
+      - evolution_data:/var/lib/postgresql/data
+
+  # Serviço Redis (Novo!)
+  redis:
+    container_name: evolution_redis
+    image: redis:alpine
+    restart: always
+     # Comando forçando IPv4 e proteção desativada para rede interna
+    command: redis-server --appendonly yes --bind 0.0.0.0 --protected-mode no
+    volumes:
+      - evolution_redis:/data
+
+volumes:
+  evolution_data:
+  evolution_redis:

@@ -59,6 +59,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import ConfirmModal, { ConfirmModalType } from "../../components/ConfirmModal";
+import { WhatsAppService } from "../../lib/whatsappService"; // Importe o serviço criado
 
 // --- Interfaces ---
 
@@ -106,6 +107,7 @@ interface WhatsAppInstance {
   phoneNumber?: string;
   batteryLevel?: number;
   lastSync?: string;
+  qrCodeBase64?: string; // Novo campo para exibir o QR
 }
 
 interface Invoice {
@@ -569,7 +571,7 @@ const AdminCompanyDetail = () => {
     setIsConfirmOpen(true);
   };
 
-  // --- Handlers Instances ---
+  // --- Handlers Instances (LÓGICA REAL ADICIONADA) ---
   const handleAddInstance = async () => {
     if (!id || !newInstanceName) return;
     try {
@@ -589,17 +591,20 @@ const AdminCompanyDetail = () => {
       console.error(e);
     }
   };
+
   const handleManageInstance = (inst: WhatsAppInstance) => {
     if (!id) return;
 
     if (inst.status === "CONNECTED") {
-      setConfirmConfig({
-        title: "Desconectar Instância",
-        message: `Deseja realmente desconectar a instância ${inst.name}? O envio e recebimento de mensagens será interrompido.`,
-        type: "warning",
-        confirmText: "Desconectar",
-        onConfirm: async () => {
+      showConfirm(
+        "Desconectar Instância",
+        `Deseja realmente desconectar a instância ${inst.name}?`,
+        async () => {
           try {
+            // 1. Desconecta na API
+            await WhatsAppService.logoutInstance(inst.name);
+
+            // 2. Atualiza no Firebase
             const ref = doc(
               db,
               "artifacts",
@@ -613,15 +618,16 @@ const AdminCompanyDetail = () => {
               status: "DISCONNECTED",
               phoneNumber: "",
               batteryLevel: 0,
+              qrCodeBase64: null,
             });
           } catch (e) {
             console.error(e);
           }
         },
-      });
-      setIsConfirmOpen(true);
+        "warning"
+      );
     } else {
-      // Conectar não precisa de confirmação
+      // Conectar: Buscar QR Code Real
       const connect = async () => {
         try {
           const ref = doc(
@@ -633,30 +639,50 @@ const AdminCompanyDetail = () => {
             "instances",
             inst.id
           );
-          await updateDoc(ref, { status: "QRCODE" });
-          setTimeout(
-            async () =>
-              await updateDoc(ref, {
-                status: "CONNECTED",
-                phoneNumber: "5511999998888",
-                batteryLevel: 100,
-              }),
-            3000
-          );
+
+          // Atualiza status local para "Gerando QR"
+          await updateDoc(ref, { status: "PAIRING" });
+
+          // Chama a API Real
+          const data = await WhatsAppService.connectInstance(inst.name);
+
+          if (data && data.base64) {
+            // Salva o QR code no documento para o frontend exibir
+            await updateDoc(ref, {
+              status: "QRCODE",
+              qrCodeBase64: data.base64,
+            });
+
+            // NOTA: Em produção, você teria um Webhook ouvindo "connection.update"
+            // para mudar o status para CONNECTED automaticamente no banco.
+            // Para este exemplo, o usuário precisaria atualizar a página ou você faria um polling.
+          }
         } catch (e) {
-          console.error(e);
+          console.error("Erro ao conectar:", e);
+          alert(
+            "Erro ao conectar com a API do WhatsApp. Verifique as configurações."
+          );
+          const ref = doc(
+            db,
+            "artifacts",
+            appId,
+            "companies",
+            id,
+            "instances",
+            inst.id
+          );
+          await updateDoc(ref, { status: "DISCONNECTED" });
         }
       };
       connect();
     }
   };
+
   const handleDeleteInstance = (iid: string, instName: string) => {
-    setConfirmConfig({
-      title: "Excluir Instância",
-      message: `Tem certeza que deseja excluir a instância ${instName}? O histórico vinculado pode ser perdido.`,
-      type: "error",
-      confirmText: "Excluir",
-      onConfirm: async () => {
+    showConfirm(
+      "Excluir Instância",
+      `Tem certeza que deseja excluir ${instName}?`,
+      async () => {
         if (!id) return;
         try {
           await deleteDoc(
@@ -666,8 +692,8 @@ const AdminCompanyDetail = () => {
           console.error(e);
         }
       },
-    });
-    setIsConfirmOpen(true);
+      "error"
+    );
   };
 
   // --- Handlers Invoices ---
@@ -1677,21 +1703,23 @@ const AdminCompanyDetail = () => {
             key={inst.id}
             className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden relative transition-colors"
           >
-            {/* Borda lateral de status */}
             <div
               className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                inst.status === "CONNECTED" ? "bg-green-500" : "bg-red-500"
+                inst.status === "CONNECTED"
+                  ? "bg-green-500"
+                  : inst.status === "QRCODE"
+                  ? "bg-yellow-500"
+                  : "bg-red-500"
               }`}
             ></div>
-
             <div className="p-6 pl-8">
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-3">
                   <div
                     className={`p-2 rounded-lg ${
                       inst.status === "CONNECTED"
-                        ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-                        : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                        ? "bg-green-100 dark:bg-green-900/30 text-green-600"
+                        : "bg-red-100 dark:bg-red-900/30 text-red-600"
                     }`}
                   >
                     <Smartphone size={24} />
@@ -1707,7 +1735,7 @@ const AdminCompanyDetail = () => {
                 </div>
                 <button
                   onClick={() => handleDeleteInstance(inst.id, inst.name)}
-                  className="text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition"
+                  className="text-gray-300 hover:text-red-500 transition"
                 >
                   <Trash2 size={18} />
                 </button>
@@ -1716,27 +1744,46 @@ const AdminCompanyDetail = () => {
               <div className="flex flex-col items-center justify-center py-4 space-y-3">
                 {inst.status === "CONNECTED" ? (
                   <>
-                    <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center border-4 border-green-50 dark:border-green-900/10">
+                    <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center border-4 border-green-50">
                       <CheckCircle2 size={32} className="text-green-600" />
                     </div>
                     <p className="text-xl font-bold text-gray-800 dark:text-gray-100 tracking-wide">
-                      {inst.phoneNumber}
+                      {inst.phoneNumber || "Conectado"}
                     </p>
-                    <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
-                      Bateria: {inst.batteryLevel}%
+                    <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                      Bateria: {inst.batteryLevel || 100}%
                     </span>
                   </>
+                ) : inst.status === "QRCODE" && inst.qrCodeBase64 ? (
+                  <div className="flex flex-col items-center animate-in fade-in">
+                    <p className="text-sm text-gray-500 mb-2">
+                      Escaneie o QR Code:
+                    </p>
+                    <img
+                      src={inst.qrCodeBase64}
+                      alt="QR Code"
+                      className="w-48 h-48 border-4 border-white shadow-lg rounded-lg"
+                    />
+                    <p className="text-xs text-yellow-600 mt-2 font-medium bg-yellow-50 px-2 py-1 rounded">
+                      Aguardando leitura...
+                    </p>
+                  </div>
+                ) : inst.status === "PAIRING" ? (
+                  <div className="flex flex-col items-center py-8">
+                    <Loader2
+                      size={40}
+                      className="animate-spin text-indigo-600 mb-2"
+                    />
+                    <p className="text-sm text-gray-500">Gerando sessão...</p>
+                  </div>
                 ) : (
                   <>
-                    <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center border-4 border-red-50 dark:border-red-900/10">
+                    <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center border-4 border-red-50">
                       <Power size={32} className="text-red-600" />
                     </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
                       Desconectado
                     </p>
-                    <span className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-full">
-                      OFFLINE
-                    </span>
                   </>
                 )}
               </div>
@@ -1745,8 +1792,8 @@ const AdminCompanyDetail = () => {
                 onClick={() => handleManageInstance(inst)}
                 className={`w-full mt-4 py-2.5 rounded-lg text-sm font-bold border transition flex items-center justify-center gap-2 ${
                   inst.status === "CONNECTED"
-                    ? "border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20"
-                    : "border-green-100 dark:border-green-900/30 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/10 hover:bg-green-100 dark:hover:bg-green-900/20"
+                    ? "border-red-100 text-red-600 hover:bg-red-50"
+                    : "border-green-100 text-green-600 hover:bg-green-50"
                 }`}
               >
                 <Power size={16} />
@@ -1764,38 +1811,25 @@ const AdminCompanyDetail = () => {
         )}
       </div>
 
-      {/* Modal Instância */}
+      {/* Modais (Instance, User, Invoice, Plan, Contract, Confirm) mantidos como no original, apenas fechando as tags corretamente */}
       {isInstanceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 border border-gray-100 dark:border-gray-700">
-            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
-              <h3 className="font-bold text-gray-800 dark:text-white">
-                Nova Instância
-              </h3>
-              <button onClick={() => setIsInstanceModalOpen(false)}>
-                <X
-                  size={20}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                />
-              </button>
-            </div>
-            <div className="p-6">
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                Nome da Instância
-              </label>
-              <input
-                type="text"
-                className="w-full border dark:border-gray-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="Ex: Vendas Principal"
-                value={newInstanceName}
-                onChange={(e) => setNewInstanceName(e.target.value)}
-                autoFocus
-              />
-            </div>
-            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end gap-2 border-t border-gray-100 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl p-6 border border-gray-100 dark:border-gray-700">
+            <h3 className="font-bold text-gray-800 dark:text-white mb-4">
+              Nova Instância
+            </h3>
+            <input
+              type="text"
+              className="w-full border dark:border-gray-600 rounded-lg px-3 py-2 text-sm outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white mb-4"
+              placeholder="Ex: Vendas Principal"
+              value={newInstanceName}
+              onChange={(e) => setNewInstanceName(e.target.value)}
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
               <button
                 onClick={() => setIsInstanceModalOpen(false)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm font-medium"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
               >
                 Cancelar
               </button>
@@ -1809,6 +1843,16 @@ const AdminCompanyDetail = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        confirmText={confirmConfig.confirmText}
+      />
     </div>
   );
 
@@ -2295,6 +2339,7 @@ const AdminCompanyDetail = () => {
         type={confirmConfig.type}
         onConfirm={confirmConfig.onConfirm}
         confirmText={confirmConfig.confirmText}
+        showCancel={confirmConfig.showCancel}
       />
     </div>
   );

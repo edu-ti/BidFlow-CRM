@@ -20,11 +20,10 @@ import {
   onSnapshot,
   orderBy,
   addDoc,
-  serverTimestamp,
   doc,
   updateDoc,
-  where,
 } from "firebase/firestore";
+import { WhatsAppService } from "../../lib/whatsappService"; // Importe o serviço
 
 const Conversations = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -33,12 +32,12 @@ const Conversations = () => {
   const [messageInput, setMessageInput] = useState("");
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isSending, setIsSending] = useState(false); // Estado de loading para envio
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 1. Carregar Conversas
+  // 1. Carregar Conversas (Mantido igual)
   useEffect(() => {
     if (!auth.currentUser) return;
-
     const q = query(
       collection(
         db,
@@ -50,7 +49,6 @@ const Conversations = () => {
       ),
       orderBy("lastMessageAt", "desc")
     );
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetched = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -65,15 +63,13 @@ const Conversations = () => {
       setConversations(fetched);
       setIsLoadingChats(false);
     });
-
     return () => unsubscribe();
   }, []);
 
-  // 2. Carregar Mensagens ao selecionar
+  // 2. Carregar Mensagens (Mantido igual)
   useEffect(() => {
     if (!selectedChatId || !auth.currentUser) return;
     setIsLoadingMessages(true);
-
     const q = query(
       collection(
         db,
@@ -87,7 +83,6 @@ const Conversations = () => {
       ),
       orderBy("createdAt", "asc")
     );
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetched = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -106,15 +101,41 @@ const Conversations = () => {
         100
       );
     });
-
     return () => unsubscribe();
   }, [selectedChatId]);
 
+  // 3. Modificado: Enviar Mensagem via API e salvar no banco
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedChatId || !auth.currentUser) return;
+    if (
+      !messageInput.trim() ||
+      !selectedChatId ||
+      !auth.currentUser ||
+      isSending
+    )
+      return;
 
+    setIsSending(true);
     try {
       const now = new Date().toISOString();
+      const activeChat = conversations.find((c) => c.id === selectedChatId);
+
+      // 1. Enviar para API do WhatsApp (Se tiver telefone válido)
+      if (activeChat && activeChat.contactId) {
+        // Assumindo que contactId guarda o telefone ou ID do contato
+        // Você precisa passar o nome da instância correta da empresa.
+        // Em um app real, isso viria do contexto do usuário. Vou usar "Vendas Principal" como exemplo fixo.
+        try {
+          await WhatsAppService.sendTextMessage(
+            "Vendas Principal",
+            activeChat.contactId,
+            messageInput
+          );
+        } catch (apiError) {
+          console.error("Erro API, salvando offline:", apiError);
+        }
+      }
+
+      // 2. Salvar no Firestore (Histórico)
       const chatRef = doc(
         db,
         "artifacts",
@@ -143,6 +164,8 @@ const Conversations = () => {
       setMessageInput("");
     } catch (error) {
       console.error("Erro ao enviar:", error);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -150,7 +173,7 @@ const Conversations = () => {
 
   return (
     <div className="flex h-[calc(100vh-6rem)] bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-      {/* List Panel */}
+      {/* List Panel (Esquerda) */}
       <div className="w-full md:w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
         <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
           <div className="relative">
@@ -165,7 +188,6 @@ const Conversations = () => {
             />
           </div>
         </div>
-
         <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800">
           {isLoadingChats ? (
             <div className="flex justify-center p-8">
@@ -173,7 +195,7 @@ const Conversations = () => {
             </div>
           ) : conversations.length === 0 ? (
             <div className="p-8 text-center text-gray-500 text-sm">
-              Nenhuma conversa iniciada.
+              Nenhuma conversa.
             </div>
           ) : (
             conversations.map((conv) => (
@@ -218,11 +240,10 @@ const Conversations = () => {
         </div>
       </div>
 
-      {/* Chat Area */}
+      {/* Chat Area (Direita) */}
       <div className="hidden md:flex flex-1 flex-col bg-[#e5ddd5] dark:bg-[#0b141a] relative">
         {selectedChatId && activeChat ? (
           <>
-            {/* Header */}
             <div className="bg-gray-100 dark:bg-gray-800 p-3 flex justify-between items-center border-b border-gray-200 dark:border-gray-700 z-10">
               <div className="flex items-center gap-3">
                 <img
@@ -247,11 +268,7 @@ const Conversations = () => {
                 <MoreVertical size={20} className="cursor-pointer" />
               </div>
             </div>
-
-            {/* Messages Background */}
             <div className="absolute inset-0 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] opacity-10 pointer-events-none"></div>
-
-            {/* Messages List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 relative z-0">
               {messages.map((msg) => (
                 <div
@@ -287,8 +304,6 @@ const Conversations = () => {
               ))}
               <div ref={messagesEndRef} />
             </div>
-
-            {/* Input Area */}
             <div className="bg-gray-100 dark:bg-gray-800 p-3 flex items-center gap-3 z-10">
               <Smile
                 size={24}
@@ -304,13 +319,19 @@ const Conversations = () => {
                 onChange={(e) => setMessageInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                 placeholder="Digite uma mensagem"
+                disabled={isSending}
                 className="flex-1 bg-white dark:bg-gray-700 py-2 px-4 rounded-lg focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               />
               <button
                 onClick={handleSendMessage}
-                className="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-700 transition"
+                disabled={isSending}
+                className="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-700 transition disabled:opacity-50"
               >
-                <Send size={20} />
+                {isSending ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <Send size={20} />
+                )}
               </button>
             </div>
           </>
@@ -326,7 +347,7 @@ const Conversations = () => {
               BidFlow Web
             </h2>
             <p className="text-gray-400 dark:text-gray-500 mt-2">
-              Selecione uma conversa para começar o atendimento.
+              Selecione uma conversa para começar.
             </p>
           </div>
         )}
