@@ -1,111 +1,116 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const express = require("express");
+const cors = require("cors");
 
-// Inicializa o Admin do Firebase para acessar o banco de dados
 admin.initializeApp();
 const db = admin.firestore();
 
-// ===============================================================
-// WEBHOOK PARA EVOLUTION API (WHATSAPP)
-// ===============================================================
-// Configure esta URL na sua Evolution API:
-// URL: https://us-central1-SEU-PROJETO.cloudfunctions.net/whatsappWebhook
-// ===============================================================
+const app = express();
+app.use(cors({ origin: true }));
+app.use(express.json());
 
-exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
-  // 1. Verificação básica de segurança (Opcional: validar API Key no header)
-  if (req.method !== "POST") {
-    return res.status(405).send("Method Not Allowed");
-  }
+// ----------------------------------------------------------------------
+// CONFIGURAÇÃO DA META (OFFICIAL API)
+// ----------------------------------------------------------------------
+const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
-  const body = req.body;
+// ----------------------------------------------------------------------
+// ROTA 1: VERIFICAÇÃO DO WEBHOOK (GET)
+// ----------------------------------------------------------------------
+// A Meta envia uma requisição GET para verificar se você é dono do servidor.
+// Você deve retornar o código "hub.challenge" se o token bater.
+app.get("/webhook", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
 
-  // A Evolution API envia o nome da instância e o tipo de evento
-  const instanceName = body.instance;
-  const type = body.type; // ex: "message", "connection.update"
-
-  try {
-    console.log(
-      `[Webhook] Evento recebido: ${type} da instância ${instanceName}`
-    );
-
-    // -------------------------------------------------------------
-    // CENÁRIO A: Recebimento de Mensagem de Texto
-    // -------------------------------------------------------------
-    if (type === "message") {
-      const messageData = body.data;
-
-      // Ignorar mensagens enviadas por mim mesmo (fromMe)
-      if (messageData.key.fromMe) {
-        return res.status(200).send("Ignored fromMe");
-      }
-
-      const remoteJid = messageData.key.remoteJid; // ID do remetente (ex: 551199999@s.whatsapp.net)
-      const pushName = messageData.pushName || "Desconhecido"; // Nome do perfil
-
-      // Extrair o texto (pode vir em conversation ou extendedTextMessage)
-      const content =
-        messageData.message?.conversation ||
-        messageData.message?.extendedTextMessage?.text;
-
-      if (!content) {
-        console.log("Mensagem sem conteúdo de texto processável.");
-        return res.status(200).send("No content");
-      }
-
-      // ID do documento é o número limpo (sem @s.whatsapp.net)
-      const contactPhone = remoteJid.replace("@s.whatsapp.net", "");
-
-      // LÓGICA DE SALVAMENTO NO FIRESTORE
-      // 1. Achar o Dono da Instância (Empresa)
-      // Nota: Em produção, você faria uma query para achar qual empresa tem essa 'instanceName'
-      // Aqui vamos simular salvando numa coleção genérica ou fixa para teste
-
-      // Vamos salvar um log na coleção 'webhook_logs' para você ver no painel "Integrações"
-      await db
-        .collection("artifacts")
-        .doc("bidflow-crm")
-        .collection("webhook_logs")
-        .add({
-          event: "message.received",
-          source: `WhatsApp (${instanceName})`,
-          status: "success",
-          timestamp: new Date().toISOString(),
-          payload: JSON.stringify({
-            from: contactPhone,
-            name: pushName,
-            text: content,
-          }),
-        });
-
-      console.log(`Mensagem de ${contactPhone}: ${content} salva nos logs.`);
+  // Verifica se a Meta enviou os parâmetros
+  if (mode && token) {
+    // Verifica se o token é igual ao que você definiu no .env
+    if (mode === "subscribe" && token === VERIFY_TOKEN) {
+      console.log("WEBHOOK_VERIFIED");
+      // IMPORTANTE: Deve retornar APENAS o challenge como texto puro
+      res.status(200).send(challenge);
+    } else {
+      console.error("Token de verificação incorreto.");
+      res.sendStatus(403);
     }
-
-    // -------------------------------------------------------------
-    // CENÁRIO B: Atualização de Status (Conectado/Desconectado)
-    // -------------------------------------------------------------
-    if (type === "connection.update") {
-      const state = body.data.state; // 'open', 'close', 'connecting'
-
-      // Logar mudança de status
-      console.log(`Status da instância ${instanceName} mudou para: ${state}`);
-
-      // Aqui você poderia buscar a instância no banco e atualizar o status field
-      // Ex: db.collection('instances').where('name', '==', instanceName).update({ status: 'CONNECTED' })
-    }
-
-    return res.status(200).send("OK");
-  } catch (error) {
-    console.error("Erro no processamento do Webhook:", error);
-    return res.status(500).send("Internal Server Error");
+  } else {
+    // Se não tiver os parâmetros, retorna erro
+    res.sendStatus(400);
   }
 });
+
+// ----------------------------------------------------------------------
+// ROTA 2: RECEBIMENTO DE MENSAGENS (POST)
+// ----------------------------------------------------------------------
+app.post("/webhook", async (req, res) => {
+  try {
+    const body = req.body;
+
+    console.log("Recebendo webhook Meta:", JSON.stringify(body, null, 2));
+
+    // Verifica se é um evento de conta empresarial do WhatsApp
+    if (body.object === "whatsapp_business_account") {
+      // A estrutura da Meta é bem aninhada: entry -> changes -> value -> messages
+      if (body.entry && body.entry.length > 0) {
+        // Percorre as entradas (geralmente é 1, mas pode ser array)
+        for (const entry of body.entry) {
+          if (entry.changes && entry.changes.length > 0) {
+            for (const change of entry.changes) {
+              const value = change.value;
+
+              if (value && value.messages && value.messages.length > 0) {
+                const message = value.messages[0]; // Pega a primeira mensagem
+
+                const from = message.from; // Número do cliente
+                const msgType = message.type;
+                let msgBody = "";
+
+                // Verifica o tipo de mensagem para extrair o texto corretamente
+                if (msgType === "text") {
+                  msgBody = message.text.body;
+                } else {
+                  msgBody = `[${msgType.toUpperCase()}]`; // Ex: [IMAGE], [AUDIO]
+                }
+
+                // Tenta pegar o nome do contato se disponível
+                let contactName = "Desconhecido";
+                if (value.contacts && value.contacts.length > 0) {
+                  contactName = value.contacts[0].profile.name;
+                }
+
+                console.log(
+                  `Mensagem Oficial de ${contactName} (${from}): ${msgBody}`
+                );
+
+                // Salva no Firestore
+                await db.collection("chats").add({
+                  from: from,
+                  senderName: contactName,
+                  message: msgBody,
+                  phoneNumberId: value.metadata.phone_number_id,
+                  timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                  read: false,
+                  platform: "meta-official",
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // Retorna 200 OK imediatamente para a Meta
+      res.sendStatus(200);
+    } else {
+      // Se não for evento do WhatsApp Business, retorna 404
+      res.sendStatus(404);
+    }
+  } catch (error) {
+    console.error("Erro no processamento:", error);
+    res.sendStatus(500);
+  }
+});
+
+exports.whatsapp = functions.https.onRequest(app);
